@@ -1,0 +1,4802 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ArchiveNode</title>
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23111827'/%3E%3Crect x='4' y='5' width='16' height='15' rx='2' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='16' y1='3' x2='16' y2='7' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='8' y1='3' x2='8' y2='7' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='4' y1='11' x2='20' y2='11' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --paper: #ffffff;
+      --ink: #111827;
+      --mute: #6b7280;
+      --line: #e5e7eb;
+      --accent: #111827;
+      --accent-ink: #ffffff;
+      --hl: #fef08a;
+      --warn: #ea580c;
+      --ok: #16a34a;
+      --fill: rgba(0, 0, 0, 0.03);
+      --nav-bg: rgba(255, 255, 255, 0.85);
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    @media(prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0a0a0a;
+        --paper: #0a0a0a;
+        --ink: #f9fafb;
+        --mute: #9ca3af;
+        --line: #262626;
+        --accent: #ffffff;
+        --accent-ink: #000000;
+        --fill: rgba(255, 255, 255, 0.05);
+        --nav-bg: rgba(10, 10, 10, 0.85);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0a0a0a;
+      --paper: #0a0a0a;
+      --ink: #f9fafb;
+      --mute: #9ca3af;
+      --line: #262626;
+      --accent: #ffffff;
+      --accent-ink: #000000;
+      --fill: rgba(255, 255, 255, 0.05);
+      --nav-bg: rgba(10, 10, 10, 0.85);
+    }
+
+    :root[data-contrast="high"] {
+      --mute: var(--ink);
+      --fill: rgba(0, 0, 0, 0.08);
+    }
+
+    @media(prefers-color-scheme: dark) {
+
+      :root[data-contrast="high"]:not([data-theme="light"]),
+      :root[data-theme="dark"][data-contrast="high"] {
+        --fill: rgba(255, 255, 255, 0.12);
+      }
+    }
+
+    html[data-text="large"] body {
+      font-size: 18px;
+    }
+
+    html[data-text="large"] .sub,
+    html[data-text="large"] label,
+    html[data-text="large"] .set-item {
+      font-size: 17px;
+    }
+
+    html[data-text="large"] .lead {
+      font-size: 19px;
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px);
+      -webkit-text-size-adjust: 100%;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--ink);
+      font: 400 15px/1.6 "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .wrap {
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 0 20px 120px;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      margin: 0 -20px 24px -20px;
+      background: var(--bg);
+      z-index: 90;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      font: 700 20px "Plus Jakarta Sans", sans-serif;
+      letter-spacing: -0.04em;
+    }
+
+    .brand small {
+      display: none;
+    }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 540px;
+      background: var(--nav-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--line);
+      display: flex;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+      z-index: 100;
+      gap: 8px;
+    }
+
+    nav button {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border: 0;
+      background: none;
+      color: var(--mute);
+      font: 500 11px "Plus Jakarta Sans", sans-serif;
+      padding: 6px 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    nav button svg {
+      width: 20px;
+      height: 20px;
+      opacity: 0.8;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease;
+    }
+
+    nav button[aria-selected=true] {
+      color: var(--accent);
+    }
+
+    nav button[aria-selected=true] svg {
+      opacity: 1;
+      transform: translateY(-2px);
+      color: var(--accent);
+    }
+
+    h1,
+    h2 {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      margin: 0 0 12px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: -0.03em;
+    }
+
+    h1 svg {
+      color: var(--accent);
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    h2 {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--mute);
+    }
+
+    .lead {
+      color: var(--mute);
+      margin: 0 0 28px;
+      font-size: 15px;
+    }
+
+    .sheet {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    /* Minimalist toggle segments with pure CSS sliding animation */
+    .seg {
+      display: flex;
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 28px;
+      position: relative;
+    }
+
+    .seg::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      bottom: 4px;
+      width: calc((100% - 8px) / 2);
+      background: var(--accent);
+      border-radius: 4px;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 0;
+    }
+
+    .seg:has(button:nth-child(2)[aria-selected="true"])::before {
+      transform: translateX(100%);
+    }
+
+    .seg.seg-3::before {
+      width: calc((100% - 8px) / 3);
+    }
+
+    .seg.seg-3:has(button:nth-child(2)[aria-selected="true"])::before {
+      transform: translateX(100%);
+    }
+
+    .seg.seg-3:has(button:nth-child(3)[aria-selected="true"])::before {
+      transform: translateX(200%);
+    }
+
+    .seg button {
+      flex: 1;
+      border: 0;
+      background: transparent !important;
+      color: var(--mute);
+      font: 500 14px "Inter", sans-serif;
+      padding: 10px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .seg button[aria-selected=true] {
+      color: var(--accent-ink);
+    }
+
+    textarea,
+    input[type=text],
+    input[type=search] {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      background: var(--fill);
+      color: var(--ink);
+      font: 400 15px/1.6 "Inter", sans-serif;
+      padding: 16px;
+      transition: all 0.3s ease;
+      appearance: none;
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+    }
+
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: none;
+      border-color: var(--line);
+      background: transparent;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--mute);
+    }
+
+    .drop {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 160px;
+      border: 1px dashed transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      color: var(--mute);
+      text-align: center;
+      padding: 24px 16px;
+      background: var(--fill);
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .drop:hover {
+      border-color: var(--mute);
+      color: var(--ink);
+      background: transparent;
+    }
+
+    .drop:active {
+      opacity: 0.7;
+    }
+
+    .drop img {
+      max-height: 140px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+    }
+
+    .row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+      margin-top: 32px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 0;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font: 500 15px "Inter", sans-serif;
+      padding: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+      width: 100%;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn:active {
+      opacity: 0.8;
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .btn.ghost:hover {
+      background: var(--bg);
+      border-color: var(--mute);
+    }
+
+    .notice {
+      margin-top: 12px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1px solid var(--warn);
+      color: var(--warn);
+      font-size: 14px;
+    }
+
+    .txt {
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+
+    mark {
+      background: var(--hl);
+      color: #000;
+      padding: 0 4px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .chip {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: default;
+    }
+
+    .chip b {
+      font-size: 11px;
+      color: var(--mute);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .chip.un {
+      border-style: dashed;
+      color: var(--mute);
+      background: transparent;
+    }
+
+    button.chip {
+      cursor: pointer;
+      color: var(--ink);
+      font-family: inherit;
+      transition: border-color 0.3s ease;
+    }
+
+    button.chip:hover {
+      border-color: var(--mute);
+    }
+
+    .chip-wrap {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .chip-btn {
+      border: none;
+      background: transparent;
+      padding: 8px 12px;
+      font: 500 13px "Inter", sans-serif;
+      color: var(--ink);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.3s ease;
+    }
+
+    .chip-btn b {
+      color: var(--mute);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .pos-badge {
+      font-size: 10px;
+      font-weight: 700;
+      font-family: monospace;
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      line-height: 1.25;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    .pos-nn { background: rgba(59, 130, 246, 0.12); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.25); }
+    .pos-nnp { background: rgba(147, 51, 234, 0.12); color: #9333ea; border: 1px solid rgba(147, 51, 234, 0.25); }
+    .pos-vb { background: rgba(16, 185, 129, 0.14); color: #059669; border: 1px solid rgba(16, 185, 129, 0.28); }
+    .pos-jj { background: rgba(245, 158, 11, 0.14); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.28); }
+    .pos-rb { background: rgba(6, 182, 212, 0.14); color: #0891b2; border: 1px solid rgba(6, 182, 212, 0.28); }
+    .pos-md { background: rgba(244, 63, 94, 0.14); color: #e11d48; border: 1px solid rgba(244, 63, 94, 0.28); }
+    .pos-tl { background: rgba(100, 116, 139, 0.14); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.28); }
+
+    .chip-btn:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .chip-wrap-active {
+      border-color: #4285f4 !important;
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.15);
+      width: 100% !important;
+    }
+
+    .synset-nav-btn {
+      transition: all 0.2s ease;
+    }
+
+    .synset-nav-btn:hover {
+      filter: brightness(0.95);
+      transform: translateY(-1px);
+    }
+
+    .synset-nav-btn:active {
+      transform: translateY(0);
+    }
+
+    .term-dict {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      background: var(--fill);
+    }
+
+    .term-dict.open {
+      grid-template-rows: 1fr;
+      border-top: 1px solid var(--line);
+    }
+
+    .term-dict-inner {
+      overflow: hidden;
+      font-size: 13px;
+      color: var(--mute);
+      padding: 0 14px;
+      line-height: 1.5;
+      text-align: left;
+    }
+
+    .bars {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .bar {
+      display: grid;
+      grid-template-columns: 100px 1fr 28px;
+      gap: 16px;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .bar span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      background: var(--fill);
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      width: 100%;
+      min-width: 0;
+      position: relative;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      border-radius: 3px;
+      background: var(--accent);
+      transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 100%;
+    }
+
+    .bar span:last-child {
+      text-align: right;
+      color: var(--mute);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Google Lens Scanner Styles - GPU Accelerated */
+    @keyframes lensLaser {
+      0% { transform: translate3d(0, 0, 0); opacity: 0.85; }
+      50% { transform: translate3d(0, 360px, 0); opacity: 1; }
+      100% { transform: translate3d(0, 0, 0); opacity: 0.85; }
+    }
+
+    .lens-laser-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, rgba(66, 133, 244, 0), #4285f4, #00e5ff, #4285f4, rgba(66, 133, 244, 0));
+      box-shadow: 0 0 14px 4px rgba(66, 133, 244, 0.75), 0 0 6px #00e5ff;
+      pointer-events: none;
+      z-index: 10;
+      will-change: transform, opacity;
+      animation: lensLaser 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
+
+    .lens-box {
+      position: absolute;
+      background: rgba(66, 133, 244, 0.22);
+      border: 1.5px solid rgba(66, 133, 244, 0.85);
+      border-radius: 4px;
+      box-shadow: 0 0 6px rgba(66, 133, 244, 0.35);
+      cursor: pointer;
+      will-change: transform, background-color;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .lens-box:hover {
+      background: rgba(66, 133, 244, 0.48);
+      border-color: #00e5ff;
+      box-shadow: 0 0 12px rgba(66, 133, 244, 0.85);
+      transform: scale(1.08);
+      z-index: 25;
+    }
+
+    .lens-box.low-conf {
+      background: rgba(245, 158, 11, 0.22);
+      border-color: rgba(245, 158, 11, 0.85);
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.35);
+    }
+
+    .lens-box.copied {
+      background: rgba(34, 197, 94, 0.5) !important;
+      border-color: #22c55e !important;
+      box-shadow: 0 0 14px rgba(34, 197, 94, 0.9) !important;
+      transform: scale(1.12);
+    }
+
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 10px, 0);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+    }
+
+    @keyframes detailOpen {
+      from {
+        opacity: 0;
+        transform: scale(0.98) translate3d(0, 12px, 0);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translate3d(0, 0, 0);
+      }
+    }
+
+    section:not([hidden]) {
+      animation: fadeSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      will-change: opacity, transform;
+    }
+
+    #v-det:not([hidden]) {
+      animation: detailOpen 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      will-change: opacity, transform;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .sub {
+      color: var(--mute);
+      font-size: 14px;
+      margin: 4px 0 16px;
+      line-height: 1.6;
+    }
+
+    label {
+      font-weight: 500;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 10px;
+      color: var(--ink);
+    }
+
+    .set-group {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-bottom: 32px;
+    }
+
+    .set-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .set-item:last-child {
+      border-bottom: none;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--line);
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    input:checked+.slider {
+      background-color: var(--ok);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(20px);
+    }
+
+    .entry {
+      margin-bottom: 24px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .entry:hover {
+      border-color: var(--mute);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .entry:active {
+      opacity: 0.7;
+    }
+
+    .entry:last-child {
+      margin-bottom: 0;
+    }
+
+    .entry h2 {
+      margin-bottom: 4px;
+      font-size: 18px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: normal;
+      color: var(--ink);
+    }
+
+    .meta {
+      color: var(--mute);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .empty {
+      color: var(--mute);
+      text-align: left;
+      padding: 40px 0;
+      font-size: 15px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: var(--bg);
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 200;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      animation: fadeIn 0.2s ease forwards;
+    }
+
+    .modal-box {
+      background: var(--bg);
+      padding: 24px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      animation: detailOpen 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      text-align: left;
+      border: 1px solid var(--line);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      justify-content: flex-end;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+      padding: 10px 16px !important;
+      font-size: 14px;
+      height: auto;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .toast.on {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media(min-width: 768px) {
+      .wrap {
+        max-width: 900px;
+        padding: 40px 40px 100px;
+      }
+
+      header {
+        position: static;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 0 32px;
+        margin: 0 0 32px 0;
+        background: transparent;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        font-size: 28px;
+      }
+
+      .brand small {
+        display: block;
+        margin-top: 6px;
+      }
+
+      nav {
+        position: static;
+        width: auto;
+        max-width: none;
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border: none;
+        padding: 0;
+        display: flex;
+        gap: 8px;
+        flex-direction: row;
+        z-index: auto;
+      }
+
+      nav button {
+        flex-direction: row;
+        padding: 10px 16px;
+        font-size: 14px;
+        background: transparent;
+        border: 1px solid transparent;
+      }
+
+      nav button[aria-selected=true] {
+        background: var(--paper);
+        color: var(--accent);
+        border-color: var(--line);
+      }
+
+      nav button[aria-selected=true] svg {
+        transform: none;
+        color: var(--accent);
+      }
+
+      .sheet {
+        padding: 40px;
+        border-radius: 16px;
+      }
+
+      .cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-bottom: 32px;
+      }
+
+      .two {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 32px;
+        margin-bottom: 32px;
+      }
+
+      .row {
+        flex-direction: row;
+        justify-content: flex-start;
+        margin-top: 40px;
+      }
+
+      .btn:not(.modal-actions .btn) {
+        width: auto;
+        padding: 12px 32px;
+      }
+    }
+
+    @media(prefers-reduced-motion: reduce) {
+
+      .toast,
+      .bar i,
+      .btn,
+      .seg button,
+      nav button svg,
+      .seg::before {
+        transition: none !important;
+      }
+    }
+
+    html.theme-transitioning,
+    html.theme-transitioning *,
+    html.theme-transitioning *:before,
+    html.theme-transitioning *:after {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="v-landing"
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);">
+    <style>
+      .bg-mesh {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .mesh-blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        opacity: 0.6;
+        animation: float-blob 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translate3d(0, 0, 0);
+        will-change: transform;
+        contain: strict;
+      }
+
+      .mesh-blob.b1 {
+        width: 400px;
+        height: 400px;
+        background: rgba(16, 185, 129, 0.15);
+        /* Green accent */
+        top: -100px;
+        left: -100px;
+        animation-delay: -5s;
+      }
+
+      .mesh-blob.b2 {
+        width: 500px;
+        height: 500px;
+        background: rgba(59, 130, 246, 0.15);
+        /* Blue accent */
+        bottom: -150px;
+        right: -100px;
+        animation-duration: 25s;
+      }
+
+      .mesh-blob.b3 {
+        width: 300px;
+        height: 300px;
+        background: rgba(245, 158, 11, 0.15);
+        /* Orange accent */
+        top: 40%;
+        left: 50%;
+        animation-duration: 18s;
+        animation-delay: -10s;
+      }
+
+      .landing-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--ink);
+        color: var(--bg);
+        border: none;
+        padding: 16px 36px;
+        border-radius: 32px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .landing-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+      }
+
+      .landing-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      .landing-btn svg {
+        width: 18px;
+        height: 18px;
+        margin-left: 8px;
+        transition: transform 0.3s ease;
+      }
+
+      .landing-btn:hover svg {
+        transform: translateX(4px);
+      }
+
+      .landing-icon {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 24px;
+        color: var(--ink);
+      }
+
+      .landing-title {
+        font-size: 48px;
+        font-weight: 800;
+        color: var(--ink);
+        letter-spacing: -0.04em;
+        margin-bottom: 16px;
+        line-height: 1.1;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        display: block;
+      }
+
+      .landing-desc {
+        color: var(--mute);
+        font-size: 18px;
+        margin-bottom: 48px;
+        line-height: 1.6;
+        max-width: 380px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      @media(prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .mesh-blob {
+          opacity: 0.2;
+        }
+      }
+
+      [data-theme="dark"] .mesh-blob {
+        opacity: 0.2;
+      }
+
+      @keyframes float-blob {
+        0% {
+          transform: translate3d(0, 0, 0) scale(1);
+        }
+
+        33% {
+          transform: translate3d(30px, -50px, 0) scale(1.08);
+        }
+
+        66% {
+          transform: translate3d(-20px, 20px, 0) scale(0.92);
+        }
+
+        100% {
+          transform: translate3d(40px, 60px, 0) scale(1.04);
+        }
+      }
+
+      @keyframes appEntrance {
+        0% {
+          opacity: 0;
+          transform: translateY(15px) scale(0.98);
+        }
+
+        100% {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .animate-entrance {
+        animation: appEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+    </style>
+
+    <div class="bg-mesh">
+      <div class="mesh-blob b1"></div>
+      <div class="mesh-blob b2"></div>
+      <div class="mesh-blob b3"></div>
+    </div>
+
+    <div style="text-align: center; padding: 20px; position: relative; z-index: 1;">
+      <div style="animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.1s;">
+        <svg class="landing-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4" />
+          <polyline points="14 2 14 8 20 8" />
+          <path d="M2 15h10" />
+          <path d="M9 18l3-3-3-3" />
+        </svg>
+      </div>
+
+      <div class="landing-title"
+        style="animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.2s;">ArchiveNode</div>
+
+      <p class="landing-desc"
+        style="animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.3s;">
+        Frictionless thought capture. Instantly organized, infinitely searchable.
+      </p>
+
+      <div style="animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.4s;">
+        <button class="landing-btn" id="btn-start">
+          Get Started
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" style="width: 24px; height: 24px; color: var(--ink);">
+            <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4" />
+            <polyline points="14 2 14 8 20 8" />
+            <path d="M2 15h10" />
+            <path d="M9 18l3-3-3-3" />
+          </svg>
+          ArchiveNode
+        </div>
+        <small>Minimalist thought capture.</small>
+      </div>
+      <nav role="tablist" aria-label="Sections">
+        <button role="tab" id="t-new" aria-selected="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>New</span>
+        </button>
+        <button role="tab" id="t-arc" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span>Archive</span>
+        </button>
+        <button role="tab" id="t-set" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+    </header>
+
+
+    <!-- NEW ENTRY -->
+    <section id="v-new">
+      <h1>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+        Add a note
+      </h1>
+      <p class="lead">Type, paste, or snap a photo of your notes. We'll instantly extract key topics and structure your
+        thoughts.</p>
+      <div class="sheet" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="position: relative;">
+          <textarea id="raw" aria-label="Raw note text"
+            placeholder="Start typing, paste your notes, or click the camera icon to upload an image..."
+            style="border: none; border-radius: 0; min-height: 260px; height: 260px; padding-bottom: 64px; box-shadow: none; width: 100%; display: block; resize: none; overflow: hidden; transition: height 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);"></textarea>
+
+          <div
+            style="position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--bg);">
+            <div style="display: flex; gap: 6px;">
+              <input type="file" id="file" accept="image/*" hidden>
+              <input type="file" id="camera-file" accept="image/*" capture="environment" hidden>
+              <button class="btn ghost" id="btn-camera" onclick="document.getElementById('camera-file').click()"
+                style="width: auto; padding: 8px 12px; border: none; background: transparent; color: var(--mute);"
+                title="Take photo with camera">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
+              <button class="btn ghost" id="btn-file" onclick="document.getElementById('file').click()"
+                style="width: auto; padding: 8px 12px; border: none; background: transparent; color: var(--mute);"
+                title="Upload image file">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              </button>
+              <button class="btn ghost" id="clr"
+                style="width: auto; padding: 8px 12px; border: none; background: transparent; color: var(--mute);"
+                title="Clear text">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
+            </div>
+            <button class="btn" id="go" style="width: auto; padding: 8px 16px; border-radius: 20px;">
+              Process
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hidden thumbnail container kept for backwards-compat -->
+        <div id="photoBox" hidden style="display: none;">
+          <img id="prev" alt="preview">
+          <div id="dropMsg"></div>
+        </div>
+      </div>
+
+      <!-- Google Lens Interactive Scanner View -->
+      <div id="lens-box-container" hidden style="margin-top: 20px; border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--paper); box-shadow: 0 4px 24px rgba(0,0,0,0.06); transition: all 0.3s ease;">
+        <div style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: var(--bg); flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; background: #4285f4; color: #fff;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </span>
+            <span style="font-weight: 700; font-size: 14px; color: var(--ink); letter-spacing: -0.01em;">Lens Scanner</span>
+            <span id="lens-badge" style="font-size: 11px; padding: 3px 8px; border-radius: 12px; background: rgba(66, 133, 244, 0.12); color: #4285f4; font-weight: 600;">Scanning...</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button id="btn-lens-copy" class="btn ghost" type="button" style="width: auto; padding: 6px 12px; font-size: 12px; gap: 6px; border: 1px solid var(--line); border-radius: 6px;" title="Copy all recognized text to clipboard">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy Text
+            </button>
+            <button id="btn-lens-use" class="btn ghost" type="button" style="width: auto; padding: 6px 12px; font-size: 12px; gap: 6px; border: 1px solid var(--line); border-radius: 6px;" title="Insert extracted text into raw note textarea">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Insert in Note
+            </button>
+            <button id="btn-lens-process" class="btn" type="button" style="width: auto; padding: 6px 14px; font-size: 12px; font-weight: 600; background: #2563eb; color: #fff; border: none; border-radius: 6px; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.35);" title="Directly process this extracted note into NLP pipeline">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Process Note Now
+            </button>
+            <button id="btn-lens-dismiss" type="button" style="background: transparent; border: none; color: var(--mute); cursor: pointer; padding: 6px 8px; font-size: 20px; line-height: 1;" title="Close scanner">&times;</button>
+          </div>
+        </div>
+
+        <!-- Interactive Lens Stage (Picture + Laser + Word Highlights) -->
+        <div id="lens-stage" style="position: relative; overflow: hidden; background: #0b1120; display: flex; align-items: center; justify-content: center; min-height: 240px; max-height: 520px; user-select: none; padding: 12px;">
+          <div id="lens-wrapper" style="position: relative; display: inline-block; line-height: 0; max-height: 480px;">
+            <img id="lens-photo" alt="Scanned note" style="max-width: 100%; max-height: 480px; display: block; object-fit: contain; border-radius: 6px;">
+            
+            <!-- Animated Laser Scanning Beam -->
+            <div id="lens-laser-beam" class="lens-laser-line" style="display: none;"></div>
+
+            <!-- Interactive Highlight Boxes Layer -->
+            <div id="lens-box-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; z-index: 5;"></div>
+          </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div style="padding: 10px 18px; font-size: 12px; color: var(--mute); background: var(--bg); border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <span id="lens-hint">✨ Click any highlighted word on the image to copy it, or click <b>'Use as Note Entry'</b>.</span>
+          <span id="lens-count" style="font-weight: 600; color: var(--ink);"></span>
+        </div>
+      </div>
+
+      <div class="notice" id="ocrNote" hidden style="margin-top: 16px;"></div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="v-res" hidden>
+      <h1>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+        Review entry
+      </h1>
+      <p class="lead" style="margin-bottom: 24px;">Check the extracted insights. Nothing is saved until you commit.</p>
+
+      <div class="sheet" style="padding: 24px; margin-bottom: 24px; border: 2px solid var(--accent);">
+        <label for="title"
+          style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 8px; font-weight: 700;">Entry
+          Title</label>
+        <input type="text" id="title"
+          style="font-size: 18px; font-weight: 600; padding: 12px 16px; background: var(--bg); border: 1px solid transparent; margin-bottom: 16px;"
+          placeholder="Name your note...">
+
+        <div style="display: flex; gap: 12px;">
+          <button class="btn ghost" id="discard-res"
+            style="flex: 1; font-weight: 600; color: #ff3b30; border: 1px solid var(--line);">Discard</button>
+          <button class="btn ghost" id="back"
+            style="flex: 1; font-weight: 600; background: var(--bg); border: 1px solid var(--line);">Edit</button>
+          <button class="btn" id="commit"
+            style="flex: 1; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">Save</button>
+        </div>
+      </div>
+
+      <div class="cols" style="margin-bottom: 24px;">
+        <div class="sheet" style="padding: 24px;">
+          <h2>Original text</h2>
+          <img id="outPhoto" hidden style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 6px; border: 1px solid var(--line); margin-bottom: 12px; display: block;" alt="Uploaded handwritten note">
+          <div class="txt" id="outRaw" style="max-height: 260px; overflow-y: auto; padding-right: 8px;"></div>
+        </div>
+        <div class="sheet" style="padding: 24px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h2 style="color: var(--accent); margin-bottom: 0;">Cleaned text</h2>
+            <span id="clean-auto-badge" style="display: none; font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(34, 197, 94, 0.15); color: #16a34a; font-weight: 600;">Autocorrected</span>
+          </div>
+          <div id="autocorrect-notice" hidden style="margin-bottom: 12px; font-size: 12px; line-height: 1.5; padding: 8px 12px; border-radius: 6px; background: rgba(34, 197, 94, 0.1); color: #15803d; border: 1px solid rgba(34, 197, 94, 0.25); display: flex; align-items: flex-start; gap: 8px;"></div>
+          <div class="txt" id="outClean" style="max-height: 260px; overflow-y: auto; padding-right: 8px;"></div>
+        </div>
+      </div>
+
+      <div class="two" style="margin-bottom: 24px;">
+        <div class="sheet" style="padding: 24px;">
+          <h2 style="font-size: 16px; margin-bottom: 4px;">Extracted Terms</h2>
+          <p class="sub" style="font-size: 13px; margin-bottom: 16px;">Key concepts identified in your text. Click to see definitions, or remove/add terms.</p>
+          <div class="chips" id="terms"></div>
+          <div style="margin-top: 14px; display: flex; gap: 8px;">
+            <input type="text" id="add-term-input" placeholder="Add custom key term..." style="padding: 6px 12px; font-size: 13px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); flex: 1;">
+            <button type="button" class="btn ghost" id="btn-add-term" style="width: auto; padding: 6px 14px; font-size: 13px; font-weight: 500;">Add</button>
+          </div>
+
+          <div style="height: 1px; background: var(--line); margin: 24px 0;"></div>
+
+          <h2 style="font-size: 16px; margin-bottom: 4px;">Categories</h2>
+          <p class="sub" style="font-size: 13px; margin-bottom: 16px;">Auto-generated tags for organization.</p>
+          <div class="chips" id="cats"></div>
+        </div>
+
+        <div class="sheet" style="padding: 24px;">
+          <h2 style="font-size: 16px; margin-bottom: 4px;">Topics</h2>
+          <p class="sub" style="font-size: 13px; margin-bottom: 16px;">Most frequent keywords.</p>
+          <div class="bars" id="bars"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHIVE -->
+    <section id="v-arc" hidden>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+        <div>
+          <h1 style="margin-bottom: 4px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Archive
+          </h1>
+          <p class="lead" style="margin-bottom: 0;">Quickly find past notes, terms, and topics.</p>
+        </div>
+        <button class="btn ghost" id="arc-refresh" title="Refresh notes from database"
+          style="width: auto; padding: 8px 14px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; margin-top: 4px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" id="arc-refresh-icon">
+            <polyline points="23 4 23 10 17 10" />
+            <polyline points="1 20 1 14 7 14" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+          Refresh
+        </button>
+      </div>
+      <label for="q" style="margin-top: 16px;">Search entries</label>
+      <input type="search" id="q" placeholder="Search your notes, terms, or topics..." style="margin-bottom:16px">
+      <div id="list"></div>
+    </section>
+
+    <!-- DETAIL VIEW -->
+    <section id="v-det" hidden>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <button class="btn ghost" id="det-back" style="width:auto; padding:8px 16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Back
+        </button>
+        <div id="det-view-actions" style="display: flex; gap: 8px;">
+          <button class="btn ghost" id="det-edit"
+            style="width:auto; padding:8px 14px; color: var(--ink); display: inline-flex; align-items: center; gap: 6px;" title="Edit entry">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            Edit
+          </button>
+          <button class="btn ghost" id="det-del"
+            style="width:auto; padding:8px; color: #ff3b30; border-color: transparent;" title="Delete entry">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW MODE -->
+      <div class="sheet" id="det-view-card" style="padding-top:32px;">
+        <h1 id="det-title" style="margin-bottom:8px; font-size:32px;"></h1>
+        <div class="meta" id="det-date" style="margin-bottom:24px;"></div>
+        <div class="txt" id="det-text" style="font-size:16px; line-height: 1.7; white-space: pre-wrap;"></div>
+        <h2 style="margin-top:32px;">Key terms</h2>
+        <div class="chips" id="det-terms"></div>
+      </div>
+
+      <!-- EDIT MODE -->
+      <div class="sheet" id="det-edit-card" hidden style="padding: 28px; border: 2px solid var(--accent);">
+        <label for="det-input-title" style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 8px; font-weight: 700; display: block;">Note Title</label>
+        <input type="text" id="det-input-title" style="font-size: 18px; font-weight: 600; padding: 12px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 20px; width: 100%; box-sizing: border-box;" placeholder="Note title...">
+
+        <label for="det-input-text" style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 8px; font-weight: 700; display: block;">Note Content</label>
+        <textarea id="det-input-text" style="width: 100%; min-height: 260px; font-size: 15px; line-height: 1.6; padding: 16px; font-family: inherit; resize: vertical; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); margin-bottom: 8px; box-sizing: border-box;" placeholder="Edit the note content directly here..."></textarea>
+        <p class="sub" style="font-size: 12px; color: var(--mute); margin: 0 0 20px 0;">Modifying your note content will re-extract terms, categories, and keywords for you to review before saving.</p>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn ghost" id="det-edit-cancel" style="width: auto; padding: 8px 18px;">Cancel</button>
+          <button class="btn" id="det-edit-review" style="width: auto; padding: 8px 22px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+            Review Entry
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="v-set" hidden>
+      <h1>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
+        </svg>
+        Settings
+      </h1>
+      <p class="lead">Customize your workspace.</p>
+
+      <h2>Appearance</h2>
+      <div class="set-group">
+        <div class="set-item" style="display:block">
+          <div style="margin-bottom:16px">Theme</div>
+          <div class="seg seg-3" role="tablist">
+            <button role="tab" aria-selected="false" id="thm-auto">Auto</button>
+            <button role="tab" aria-selected="true" id="thm-light">Light</button>
+            <button role="tab" aria-selected="false" id="thm-dark">Dark</button>
+          </div>
+        </div>
+      </div>
+
+      <h2>Accessibility</h2>
+      <div class="set-group">
+        <div class="set-item">
+          <span>High Contrast</span>
+          <label class="switch">
+            <input type="checkbox" id="t-contrast">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="set-item">
+          <span>Large Text</span>
+          <label class="switch">
+            <input type="checkbox" id="t-text">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <h2>Data</h2>
+      <div class="set-group">
+        <div class="set-item" style="cursor:pointer; color:#d32f2f" onclick="$('modal-clear').hidden=false">
+          Clear Archive Data
+        </div>
+      </div>
+
+      <h2>App</h2>
+      <div class="set-group">
+        <div class="set-item" style="cursor:pointer;" id="btn-show-landing">
+          Show Welcome Screen
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" style="width: 16px; height: 16px; color: var(--mute);">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div id="modal-clear" class="modal" hidden>
+    <div class="modal-box" style="text-align: left; padding: 24px;">
+      <h2 style="font-size:18px; margin-bottom:8px; color:var(--ink); font-weight: 600; letter-spacing:-0.01em;">Clear
+        all notes?</h2>
+      <p style="font-size:14px; margin-bottom:0; color:var(--mute); line-height:1.5;">This action cannot be undone. All
+        your archived notes will be permanently deleted.</p>
+      <div class="modal-actions" style="margin-top: 24px; gap: 12px; display: flex; justify-content: flex-end;">
+        <button class="btn ghost" id="btn-cancel-clear"
+          style="font-weight: 500; color: var(--ink); border: 1px solid var(--line); padding: 8px 16px; border-radius: 6px;">Cancel</button>
+        <button class="btn" id="btn-confirm-clear"
+          style="background:var(--ink); color:var(--bg); border:none; font-weight: 500; padding: 8px 16px; border-radius: 6px;">Delete
+          All</button>
+      </div>
+    </div>
+  </div>
+  <div id="modal-unsaved" class="modal" hidden>
+    <div class="modal-box" style="text-align: left; padding: 24px;">
+      <h2 style="font-size:18px; margin-bottom:8px; color:var(--ink); font-weight: 600; letter-spacing:-0.01em;">Discard
+        entry?</h2>
+      <p style="font-size:14px; margin-bottom:0; color:var(--mute); line-height:1.5;">You have an unsaved entry. If you
+        leave now, you'll need to process it again.</p>
+      <div class="modal-actions" style="margin-top: 24px; gap: 12px; display: flex; justify-content: flex-end;">
+        <button class="btn ghost" id="btn-cancel-nav"
+          style="font-weight: 500; color: var(--ink); border: 1px solid var(--line); padding: 8px 16px; border-radius: 6px;">Cancel</button>
+        <button class="btn" id="btn-confirm-nav"
+          style="background:var(--ink); color:var(--bg); border:none; font-weight: 500; padding: 8px 16px; border-radius: 6px;">Discard</button>
+      </div>
+    </div>
+  </div>
+  <div id="modal-del" class="modal" hidden>
+    <div class="modal-box" style="text-align: left; padding: 24px;">
+      <h2 style="font-size:18px; margin-bottom:8px; color:var(--ink); font-weight: 600; letter-spacing:-0.01em;">Delete
+        note?</h2>
+      <p style="font-size:14px; margin-bottom:0; color:var(--mute); line-height:1.5;">This action cannot be undone. This
+        note will be permanently deleted.</p>
+      <div class="modal-actions" style="margin-top: 24px; gap: 12px; display: flex; justify-content: flex-end;">
+        <button class="btn ghost" id="btn-cancel-del"
+          style="font-weight: 500; color: var(--ink); border: 1px solid var(--line); padding: 8px 16px; border-radius: 6px;">Cancel</button>
+        <button class="btn" id="btn-confirm-del"
+          style="background:var(--ink); color:var(--bg); border:none; font-weight: 500; padding: 8px 16px; border-radius: 6px;">Delete</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const STOP = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very can could would should will just do does did have has had cannot please not hindi".split(" "));
+    const TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya daw raw po ba din rin lang naman nga pa kasi ito iyan iyon si ni kay hindi".split(" "));
+    const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap gawin aralin kailangan tandaan basahin sulat sagot tanong".split(" "));
+    const NONTERM = new Set("equals".split(" "));
+    const CONTR = {
+      "couldn't": "could not",
+      "can't": "cannot",
+      "won't": "will not",
+      "don't": "do not",
+      "didn't": "did not",
+      "doesn't": "does not",
+      "isn't": "is not",
+      "aren't": "are not",
+      "wasn't": "was not",
+      "weren't": "were not",
+      "hasn't": "has not",
+      "haven't": "have not",
+      "hadn't": "had not",
+      "shouldn't": "should not",
+      "wouldn't": "would not",
+      "it's": "it is",
+      "i'm": "i am",
+      "you're": "you are",
+      "they're": "they are",
+      "we're": "we are",
+      "i've": "i have",
+      "you've": "you have",
+      "we've": "we have",
+      "they've": "they have",
+      "i'll": "i will",
+      "you'll": "you will",
+      "he'll": "he will",
+      "she'll": "she will",
+      "we'll": "we will",
+      "they'll": "they will",
+      "let's": "let us",
+      "that's": "that is",
+      "what's": "what is",
+      "there's": "there is",
+      "who's": "who is"
+    };
+    const SHORTCUTS = {
+      "pls": "please",
+      "plz": "please",
+      "imp": "important",
+      "yun": "yung",
+      "di": "hindi",
+      "nde": "hindi",
+      "u": "you",
+      "ur": "your",
+      "r": "are",
+      "bc": "because",
+      "b/c": "because",
+      "w/": "with",
+      "w/o": "without",
+      "info": "information",
+      "diff": "difference",
+      "def": "definition",
+      "defs": "definitions",
+      "ex": "example",
+      "exs": "examples",
+      "approx": "approximately",
+      "temp": "temperature",
+      "dept": "department",
+      "prof": "professor"
+    };
+    const CAT = {
+      // Natural & Life Sciences (WordNet hypernym mappings)
+      photosynthesis: "biological process",
+      respiration: "biological process",
+      chlorophyll: "pigment",
+      glucose: "carbohydrate",
+      sunlight: "energy source",
+      oxygen: "chemical gas",
+      carbon: "chemical element",
+      dioxide: "chemical compound",
+      mitochondria: "cell organelle",
+      membrane: "cell structure",
+      protein: "biomolecule",
+      enzyme: "biomolecule",
+      cell: "cellular biology",
+      plant: "botany",
+      leaf: "botany",
+      cycle: "biochemical process",
+      calvin: "biochemical process",
+      reaction: "chemical reaction",
+      absorb: "biological process",
+      produce: "biological process",
+      make: "biological process",
+      cellular: "cellular biology",
+      light: "energy source",
+      dark: "biochemical process",
+      // Social Sciences & Economics
+      demand: "economic concept",
+      supply: "economic concept",
+      inflation: "economic concept",
+      market: "economic concept",
+      price: "economic concept",
+      cost: "economic concept",
+      // Assessment & Study
+      exam: "assessment",
+      quiz: "assessment",
+      test: "assessment",
+      homework: "academic work",
+      lecture: "academic work",
+      study: "academic work",
+      important: "assessment",
+      // Physical Sciences & Math
+      formula: "mathematics",
+      equation: "mathematics",
+      force: "physics concept",
+      energy: "physics concept",
+      gravity: "physics concept",
+      // Computer Science
+      algorithm: "computer science",
+      network: "computer science",
+      database: "computer science"
+    };
+
+    // Contextual POS Tagger Grammatical Categories
+    const DETERMINERS = new Set(["the", "a", "an", "this", "that", "these", "those", "every", "each", "some", "any", "all", "both", "yung"]);
+    const MODALS = new Set(["can", "could", "will", "would", "shall", "should", "may", "might", "must", "cannot"]);
+    const COPULAS = new Set(["is", "am", "are", "was", "were", "be", "been", "being"]);
+    const AUX_HAVE = new Set(["have", "has", "had"]);
+    const AUX_DO = new Set(["do", "does", "did"]);
+    const INTENSIFIERS = new Set(["very", "so", "too", "really", "quite", "extremely", "pretty", "just", "soooo", "sooo"]);
+    const PREPOSITIONS = new Set(["in", "on", "at", "to", "for", "with", "by", "from", "into", "through", "during", "between", "under", "over", "about", "sa", "ng"]);
+    const PRONOUNS = new Set(["i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them", "ko", "mo", "ka", "ako", "ikaw", "siya"]);
+    const HONORIFICS = new Set(["ma'am", "maam", "sir", "dr", "dr.", "prof", "prof.", "mr", "mr.", "mrs", "mrs.", "ms", "ms."]);
+    const KNOWN_ENTITIES = new Set(["melvin", "calvin", "reyes", "newton", "mendel", "einstein", "darwin"]);
+
+    const KNOWN_VERBS = new Set([
+      "absorb", "make", "produce", "synthesize", "convert", "release", "study", "finish", "ask",
+      "require", "contain", "involve", "form", "create", "occur", "break", "combine", "generate",
+      "transfer", "store", "yield", "carry", "regulate", "control", "increase", "decrease", "change",
+      "solve", "measure", "observe", "calculate", "write", "read", "examine", "describe", "explain"
+    ]);
+
+    const KNOWN_ADJECTIVES = new Set([
+      "important", "crucial", "essential", "primary", "secondary", "vital", "significant",
+      "cellular", "chemical", "physical", "biological", "organic", "inorganic", "photosynthetic",
+      "metabolic", "molecular", "aerobic", "anaerobic", "light", "dark", "equal", "constant",
+      "complex", "simple", "direct", "indirect", "internal", "external", "active", "passive"
+    ]);
+
+    const KNOWN_NOUNS = new Set([
+      "photosynthesis", "chlorophyll", "glucose", "sunlight", "oxygen", "carbon", "dioxide",
+      "respiration", "mitochondria", "membrane", "protein", "enzyme", "cell", "plant", "leaf",
+      "cycle", "calvin", "reaction", "demand", "supply", "inflation", "market", "price", "cost",
+      "exam", "quiz", "test", "homework", "lecture", "formula", "equation", "force", "energy",
+      "gravity", "algorithm", "network", "database", "concept", "process", "system", "structure"
+    ]);
+    const LEMMA = {
+      leaves: "leaf",
+      teeth: "tooth",
+      feet: "foot",
+      mice: "mouse",
+      children: "child",
+      men: "man",
+      women: "woman",
+      people: "person",
+      data: "datum",
+      analyses: "analysis",
+      hypotheses: "hypothesis"
+    };
+    const WORDNET_DB = {
+      photosynthesis: {
+        lemma: "photosynthesis",
+        synsets: [
+          {
+            synset: "photosynthesis.n.01",
+            pos: "noun [NN]",
+            hypernym: "biological process → organic process",
+            definition: "Synthesis of chemical compounds with the aid of radiant energy (light); formation of carbohydrates in chlorophyll-containing tissues of plants exposed to sunlight.",
+            synonyms: ["light reaction", "Calvin cycle", "carbon fixation"]
+          }
+        ]
+      },
+      chlorophyll: {
+        lemma: "chlorophyll",
+        synsets: [
+          {
+            synset: "chlorophyll.n.01",
+            pos: "noun [NN]",
+            hypernym: "pigment → coloring material",
+            definition: "Any of a group of green pigments found in photosynthetic organisms; absorbs light energy for photosynthesis.",
+            synonyms: ["chlorophyl", "plant pigment"]
+          }
+        ]
+      },
+      glucose: {
+        lemma: "glucose",
+        synsets: [
+          {
+            synset: "glucose.n.01",
+            pos: "noun [NN]",
+            hypernym: "carbohydrate → monosaccharide",
+            definition: "A simple monosaccharide sugar that serves as the primary energy source in metabolism and cellular respiration.",
+            synonyms: ["dextrose", "blood sugar", "C6H12O6"]
+          }
+        ]
+      },
+      sunlight: {
+        lemma: "sunlight",
+        synsets: [
+          {
+            synset: "sunlight.n.01",
+            pos: "noun [NN]",
+            hypernym: "energy source → solar radiation",
+            definition: "The radiant energy emitted by the sun, providing illumination and energy essential for photosynthetic chemical reactions.",
+            synonyms: ["sunshine", "solar energy"]
+          }
+        ]
+      },
+      oxygen: {
+        lemma: "oxygen",
+        synsets: [
+          {
+            synset: "oxygen.n.01",
+            pos: "noun [NN]",
+            hypernym: "chemical gas → chemical element",
+            definition: "A nonmetallic bivalent element that is normally a colorless, odorless gas; essential byproduct of photosynthetic light reactions.",
+            synonyms: ["O2", "vital air"]
+          }
+        ]
+      },
+      carbon: {
+        lemma: "carbon",
+        synsets: [
+          {
+            synset: "carbon.n.01",
+            pos: "noun [NN]",
+            hypernym: "chemical element → nonmetal",
+            definition: "An abundant nonmetallic tetravalent element occurring in all organic compounds and forms of carbonaceous matter.",
+            synonyms: ["C", "carbonaceous material"]
+          },
+          {
+            synset: "carbon.n.02",
+            pos: "noun [NN]",
+            hypernym: "copy → duplicate",
+            definition: "A sheet of carbon paper or a carbon copy of a document or text.",
+            synonyms: ["carbon copy", "duplicate", "carbon paper"]
+          }
+        ]
+      },
+      dioxide: {
+        lemma: "dioxide",
+        synsets: [
+          {
+            synset: "dioxide.n.01",
+            pos: "noun [NN]",
+            hypernym: "chemical compound → oxide",
+            definition: "An oxide containing two atoms of oxygen in the molecule, such as carbon dioxide (CO2).",
+            synonyms: ["carbon dioxide", "CO2"]
+          }
+        ]
+      },
+      respiration: {
+        lemma: "respiration",
+        synsets: [
+          {
+            synset: "respiration.n.01",
+            pos: "noun [NN]",
+            hypernym: "biological process → metabolism",
+            definition: "The metabolic processes whereby living organisms obtain energy through the oxidation of complex organic substances.",
+            synonyms: ["cellular respiration", "aerobic respiration"]
+          },
+          {
+            synset: "respiration.n.02",
+            pos: "noun [NN]",
+            hypernym: "bodily process → ventilation",
+            definition: "The bodily process of inhalation and exhalation; the total process of taking in oxygen and expelling carbon dioxide.",
+            synonyms: ["breathing", "external respiration"]
+          }
+        ]
+      },
+      mitochondria: {
+        lemma: "mitochondrion",
+        synsets: [
+          {
+            synset: "mitochondrion.n.01",
+            pos: "noun [NN]",
+            hypernym: "cell organelle → cell structure",
+            definition: "An organelle found in eukaryotic cells, in which respiration and ATP production occur; known as the powerhouse of the cell.",
+            synonyms: ["powerhouse of the cell", "chondriosome"]
+          }
+        ]
+      },
+      membrane: {
+        lemma: "membrane",
+        synsets: [
+          {
+            synset: "membrane.n.01",
+            pos: "noun [NN]",
+            hypernym: "cell structure → biological barrier",
+            definition: "A pliable sheetlike structure acting as a boundary or lining in a cell, regulating molecular passage.",
+            synonyms: ["cell membrane", "lipid bilayer"]
+          },
+          {
+            synset: "membrane.n.02",
+            pos: "noun [NN]",
+            hypernym: "anatomical tissue → biological layer",
+            definition: "A thin pliable layer of tissue covering surfaces or separating spaces in an animal or plant body.",
+            synonyms: ["tissue layer", "mucous membrane"]
+          }
+        ]
+      },
+      protein: {
+        lemma: "protein",
+        synsets: [
+          {
+            synset: "protein.n.01",
+            pos: "noun [NN]",
+            hypernym: "biomolecule → macromolecule",
+            definition: "Any of a large class of nitrogenous organic compounds composed of one or more long chains of amino acids.",
+            synonyms: ["polypeptide", "amino acid chain"]
+          },
+          {
+            synset: "protein.n.02",
+            pos: "noun [NN]",
+            hypernym: "macronutrient → dietary nutrient",
+            definition: "Dietary protein essential for growth, building, and repair of body cells and muscle tissue.",
+            synonyms: ["dietary protein", "macronutrient"]
+          }
+        ]
+      },
+      enzyme: {
+        lemma: "enzyme",
+        synsets: [
+          {
+            synset: "enzyme.n.01",
+            pos: "noun [NN]",
+            hypernym: "biomolecule → biological catalyst",
+            definition: "A substance produced by a living organism which acts as a catalyst to bring about a specific biochemical reaction.",
+            synonyms: ["catalyst", "biocatalyst"]
+          }
+        ]
+      },
+      cell: {
+        lemma: "cell",
+        synsets: [
+          {
+            synset: "cell.n.01",
+            pos: "noun [NN]",
+            hypernym: "cellular biology → basic unit of life",
+            definition: "The smallest structural and functional unit of an organism, typically microscopic and consisting of cytoplasm and a nucleus.",
+            synonyms: ["eukaryote", "prokaryote", "biological unit"]
+          },
+          {
+            synset: "cell.n.02",
+            pos: "noun [NN]",
+            hypernym: "room → compartment",
+            definition: "A small room in which a prisoner, monk, or nun is kept, or an enclosed compartment in a larger structure.",
+            synonyms: ["prison cell", "cubicle", "compartment"]
+          },
+          {
+            synset: "cell.n.03",
+            pos: "noun [NN]",
+            hypernym: "device → electrochemical generator",
+            definition: "A device delivering an electric current as the result of an electrochemical reaction.",
+            synonyms: ["electric cell", "battery", "galvanic cell"]
+          }
+        ]
+      },
+      plant: {
+        lemma: "plant",
+        synsets: [
+          {
+            synset: "plant.n.02",
+            pos: "noun [NN]",
+            hypernym: "botany → living organism",
+            definition: "A living organism of the vegetable kingdom, typically synthesizing energy through photosynthesis.",
+            synonyms: ["flora", "vegetation"]
+          },
+          {
+            synset: "plant.n.01",
+            pos: "noun [NN]",
+            hypernym: "industrial facility → factory",
+            definition: "Buildings for carrying on industrial labor, manufacturing, or power generation.",
+            synonyms: ["factory", "works", "industrial plant"]
+          },
+          {
+            synset: "plant.v.01",
+            pos: "verb [VB]",
+            hypernym: "action → sow",
+            definition: "Put or set into the ground for growth, or place firmly in position.",
+            synonyms: ["sow", "seed", "embed"]
+          }
+        ]
+      },
+      leaf: {
+        lemma: "leaf",
+        synsets: [
+          {
+            synset: "leaf.n.01",
+            pos: "noun [NN]",
+            hypernym: "botany → plant organ",
+            definition: "A flattened structure of a higher plant, specialized as the primary site of photosynthetic reactions.",
+            synonyms: ["foliage", "leaves"]
+          },
+          {
+            synset: "leaf.n.02",
+            pos: "noun [NN]",
+            hypernym: "sheet → paper item",
+            definition: "A sheet of paper, especially in a book, notebook, or manuscript.",
+            synonyms: ["folio", "page", "sheet"]
+          },
+          {
+            synset: "leaf.v.01",
+            pos: "verb [VB]",
+            hypernym: "action → browse",
+            definition: "Turn over pages of a book or document; browse through readings.",
+            synonyms: ["flip through", "browse", "skim"]
+          }
+        ]
+      },
+      cycle: {
+        lemma: "cycle",
+        synsets: [
+          {
+            synset: "cycle.n.01",
+            pos: "noun [NN]",
+            hypernym: "biochemical process → pathway",
+            definition: "A series of events or reactions that are regularly repeated in the same order, returning to the starting point.",
+            synonyms: ["metabolic cycle", "feedback loop"]
+          },
+          {
+            synset: "cycle.n.06",
+            pos: "noun [NN]",
+            hypernym: "vehicle → wheeled transport",
+            definition: "A wheeled vehicle consisting of two or more wheels, such as a bicycle or tricycle.",
+            synonyms: ["bicycle", "bike", "velocipede"]
+          },
+          {
+            synset: "cycle.v.01",
+            pos: "verb [VB]",
+            hypernym: "recurrence → repeat",
+            definition: "Pass through a recurring cycle of events, or travel by bicycle.",
+            synonyms: ["recur", "repeat", "ride bike"]
+          }
+        ]
+      },
+      calvin: {
+        lemma: "Calvin",
+        synsets: [
+          {
+            synset: "calvin.nnp.cycle",
+            pos: "proper noun [NNP]",
+            hypernym: "biochemical process → metabolic pathway",
+            definition: "Named after Melvin Calvin; the light-independent reactions of photosynthesis in which carbon dioxide is fixed into carbohydrates.",
+            synonyms: ["Calvin-Benson cycle", "C3 cycle", "light-independent reactions"]
+          }
+        ]
+      },
+      reaction: {
+        lemma: "reaction",
+        synsets: [
+          {
+            synset: "reaction.n.01",
+            pos: "noun [NN]",
+            hypernym: "chemical reaction → chemical process",
+            definition: "A process that involves rearrangement of the molecular or ionic structure of a substance, transforming reactants into products.",
+            synonyms: ["chemical transformation", "process"]
+          },
+          {
+            synset: "reaction.n.03",
+            pos: "noun [NN]",
+            hypernym: "behavior → response",
+            definition: "An action or feeling in response to a statement, event, or situation.",
+            synonyms: ["response", "feedback", "counteraction"]
+          },
+          {
+            synset: "reaction.n.05",
+            pos: "noun [NN]",
+            hypernym: "medical condition → immune response",
+            definition: "An extreme sensitivity to a particular substance; an allergic reaction or physiological reflex.",
+            synonyms: ["allergic reaction", "hypersensitivity", "reflex"]
+          }
+        ]
+      },
+      demand: {
+        lemma: "demand",
+        synsets: [
+          {
+            synset: "demand.n.02",
+            pos: "noun [NN]",
+            hypernym: "economic concept → market force",
+            definition: "The quantity of a commodity or service that people are ready and able to purchase at various prices.",
+            synonyms: ["consumer demand", "market demand"]
+          },
+          {
+            synset: "demand.n.01",
+            pos: "noun [NN]",
+            hypernym: "communication → request",
+            definition: "An urgent or peremptory request or command made as of right.",
+            synonyms: ["insistent request", "claim", "requirement"]
+          },
+          {
+            synset: "demand.v.01",
+            pos: "verb [VB]",
+            hypernym: "speech act → ask",
+            definition: "Request urgently and forcefully; call for as necessary or appropriate.",
+            synonyms: ["require", "insist", "claim"]
+          }
+        ]
+      },
+      supply: {
+        lemma: "supply",
+        synsets: [
+          {
+            synset: "supply.n.01",
+            pos: "noun [NN]",
+            hypernym: "economic concept → market provision",
+            definition: "The total amount of a specific good or service that is available to consumers at a given price level.",
+            synonyms: ["stock", "market provision"]
+          },
+          {
+            synset: "supply.n.02",
+            pos: "noun [NN]",
+            hypernym: "inventory → stockpile",
+            definition: "An amount or quantity of something provided or stored for future use.",
+            synonyms: ["inventory", "reserve", "store"]
+          },
+          {
+            synset: "supply.v.01",
+            pos: "verb [VB]",
+            hypernym: "transfer → give",
+            definition: "Make something needed or wanted available to someone; provide or furnish.",
+            synonyms: ["provide", "furnish", "cater"]
+          }
+        ]
+      },
+      inflation: {
+        lemma: "inflation",
+        synsets: [
+          {
+            synset: "inflation.n.01",
+            pos: "noun [NN]",
+            hypernym: "economic concept → macroeconomic condition",
+            definition: "A general and progressive increase in prices in an economy relative to available goods and services.",
+            synonyms: ["price surge", "purchasing power decline"]
+          },
+          {
+            synset: "inflation.n.02",
+            pos: "noun [NN]",
+            hypernym: "physical act → expansion",
+            definition: "The physical act of filling something with air or gas to expand it.",
+            synonyms: ["expansion", "distension", "blowing up"]
+          }
+        ]
+      },
+      market: {
+        lemma: "market",
+        synsets: [
+          {
+            synset: "market.n.01",
+            pos: "noun [NN]",
+            hypernym: "economic concept → commercial institution",
+            definition: "A regular gathering or virtual system facilitating the purchase and sale of provisions, commodities, or services.",
+            synonyms: ["marketplace", "trade exchange"]
+          },
+          {
+            synset: "market.n.04",
+            pos: "noun [NN]",
+            hypernym: "commerce → business sector",
+            definition: "The commercial sector or customer base for particular goods or services.",
+            synonyms: ["target audience", "industry", "customer base"]
+          },
+          {
+            synset: "market.v.01",
+            pos: "verb [VB]",
+            hypernym: "business operation → promote",
+            definition: "Advertise or promote products or services to prospective buyers.",
+            synonyms: ["promote", "merchandise", "sell"]
+          }
+        ]
+      },
+      price: {
+        lemma: "price",
+        synsets: [
+          {
+            synset: "price.n.01",
+            pos: "noun [NN]",
+            hypernym: "economic concept → valuation",
+            definition: "The amount of money expected, required, or given in payment for something.",
+            synonyms: ["cost", "monetary valuation"]
+          },
+          {
+            synset: "price.n.02",
+            pos: "noun [NN]",
+            hypernym: "toll → sacrifice",
+            definition: "The cost at which something is obtained, suffered, or sacrificed.",
+            synonyms: ["toll", "penalty", "sacrifice"]
+          }
+        ]
+      },
+      cost: {
+        lemma: "cost",
+        synsets: [
+          {
+            synset: "cost.n.01",
+            pos: "noun [NN]",
+            hypernym: "economic concept → expenditure",
+            definition: "An amount that has to be paid or spent to buy, produce, or obtain something.",
+            synonyms: ["outlay", "expense"]
+          },
+          {
+            synset: "cost.n.02",
+            pos: "noun [NN]",
+            hypernym: "toll → sacrifice",
+            definition: "The effort, loss, or sacrifice necessary to achieve or obtain something.",
+            synonyms: ["sacrifice", "detriment"]
+          },
+          {
+            synset: "cost.v.01",
+            pos: "verb [VB]",
+            hypernym: "require → necessitate",
+            definition: "Require the payment of a specified sum or loss of something.",
+            synonyms: ["necessitate", "incur", "take"]
+          }
+        ]
+      },
+      exam: {
+        lemma: "exam",
+        synsets: [
+          {
+            synset: "examination.n.02",
+            pos: "noun [NN]",
+            hypernym: "assessment → formal evaluation",
+            definition: "A formal test evaluating a student's knowledge or proficiency in a subject.",
+            synonyms: ["examination", "evaluation"]
+          },
+          {
+            synset: "examination.n.01",
+            pos: "noun [NN]",
+            hypernym: "inspection → scrutiny",
+            definition: "A detailed inspection or medical checkup.",
+            synonyms: ["medical exam", "checkup", "inspection"]
+          }
+        ]
+      },
+      quiz: {
+        lemma: "quiz",
+        synsets: [
+          {
+            synset: "quiz.n.01",
+            pos: "noun [NN]",
+            hypernym: "assessment → brief test",
+            definition: "An examination consisting of a few short questions.",
+            synonyms: ["short exam", "checkup"]
+          },
+          {
+            synset: "quiz.v.01",
+            pos: "verb [VB]",
+            hypernym: "inquiry → question",
+            definition: "Ask someone questions to test their knowledge.",
+            synonyms: ["interrogate", "question"]
+          }
+        ]
+      },
+      test: {
+        lemma: "test",
+        synsets: [
+          {
+            synset: "test.n.02",
+            pos: "noun [NN]",
+            hypernym: "assessment → evaluation procedure",
+            definition: "Any standardized procedure for measuring sensitivity, ability, or knowledge.",
+            synonyms: ["trial", "examination"]
+          },
+          {
+            synset: "test.n.05",
+            pos: "noun [NN]",
+            hypernym: "biology → shell",
+            definition: "A hard outer covering as that of an echinoderm or amoeba.",
+            synonyms: ["outer shell", "carapace"]
+          },
+          {
+            synset: "test.v.01",
+            pos: "verb [VB]",
+            hypernym: "action → evaluate",
+            definition: "Put to the test; try out or evaluate performance.",
+            synonyms: ["evaluate", "try out", "assess"]
+          }
+        ]
+      },
+      homework: {
+        lemma: "homework",
+        synsets: [
+          {
+            synset: "homework.n.01",
+            pos: "noun [NN]",
+            hypernym: "academic work → assignment",
+            definition: "Schoolwork that a student is required to complete outside the classroom.",
+            synonyms: ["assignment", "schoolwork"]
+          }
+        ]
+      },
+      lecture: {
+        lemma: "lecture",
+        synsets: [
+          {
+            synset: "lecture.n.01",
+            pos: "noun [NN]",
+            hypernym: "academic work → educational discourse",
+            definition: "An educational talk to an audience, especially one of students in a university.",
+            synonyms: ["address", "presentation"]
+          },
+          {
+            synset: "lecture.n.02",
+            pos: "noun [NN]",
+            hypernym: "rebuke → reprimand",
+            definition: "A long reprimand or warning given to someone.",
+            synonyms: ["scolding", "reprimand"]
+          }
+        ]
+      },
+      formula: {
+        lemma: "formula",
+        synsets: [
+          {
+            synset: "formula.n.01",
+            pos: "noun [NN]",
+            hypernym: "mathematics → symbolic rule",
+            definition: "A mathematical relationship or rule expressed in symbols.",
+            synonyms: ["equation", "rule"]
+          },
+          {
+            synset: "formula.n.02",
+            pos: "noun [NN]",
+            hypernym: "nutritional preparation → milk substitute",
+            definition: "A liquid food preparation for infant feeding.",
+            synonyms: ["infant formula", "preparation"]
+          }
+        ]
+      },
+      equation: {
+        lemma: "equation",
+        synsets: [
+          {
+            synset: "equation.n.01",
+            pos: "noun [NN]",
+            hypernym: "mathematics → equality statement",
+            definition: "A statement that the values of two mathematical expressions are equal.",
+            synonyms: ["mathematical equality", "relation"]
+          },
+          {
+            synset: "equation.n.02",
+            pos: "noun [NN]",
+            hypernym: "chemistry → reaction balance",
+            definition: "A symbolic representation of a chemical reaction.",
+            synonyms: ["chemical equation", "stoichiometry"]
+          }
+        ]
+      },
+      force: {
+        lemma: "force",
+        synsets: [
+          {
+            synset: "force.n.01",
+            pos: "noun [NN]",
+            hypernym: "physics concept → physical interaction",
+            definition: "An influence that tends to change the motion of a body or produce motion in a stationary body.",
+            synonyms: ["thrust", "physical power"]
+          },
+          {
+            synset: "force.n.02",
+            pos: "noun [NN]",
+            hypernym: "power → physical strength",
+            definition: "Physical power or strength exerted by a person or thing.",
+            synonyms: ["might", "strength"]
+          },
+          {
+            synset: "force.n.04",
+            pos: "noun [NN]",
+            hypernym: "organization → armed unit",
+            definition: "An organized group of military personnel or police officers.",
+            synonyms: ["police force", "military unit"]
+          }
+        ]
+      },
+      energy: {
+        lemma: "energy",
+        synsets: [
+          {
+            synset: "energy.n.01",
+            pos: "noun [NN]",
+            hypernym: "physics concept → capacity for work",
+            definition: "The strength and vitality required for sustained activity; capacity of a physical system to perform work.",
+            synonyms: ["work capacity", "power"]
+          },
+          {
+            synset: "energy.n.03",
+            pos: "noun [NN]",
+            hypernym: "trait → vitality",
+            definition: "An energetic style, vigor, or enthusiasm in expression or motion.",
+            synonyms: ["vitality", "vigor", "enthusiasm"]
+          }
+        ]
+      },
+      gravity: {
+        lemma: "gravity",
+        synsets: [
+          {
+            synset: "gravity.n.01",
+            pos: "noun [NN]",
+            hypernym: "physics concept → fundamental attraction",
+            definition: "The force that attracts a body toward the center of the earth or toward any physical body having mass.",
+            synonyms: ["gravitation", "gravitational pull"]
+          },
+          {
+            synset: "gravity.n.02",
+            pos: "noun [NN]",
+            hypernym: "quality → seriousness",
+            definition: "Extreme importance, seriousness, or solemnity of a situation.",
+            synonyms: ["seriousness", "solemnity", "severity"]
+          }
+        ]
+      },
+      algorithm: {
+        lemma: "algorithm",
+        synsets: [
+          {
+            synset: "algorithm.n.01",
+            pos: "noun [NN]",
+            hypernym: "computer science → computational procedure",
+            definition: "A finite sequence of rigorous instructions, typically used to solve a class of specific problems or perform computation.",
+            synonyms: ["computation rule", "step-by-step logic"]
+          }
+        ]
+      },
+      network: {
+        lemma: "network",
+        synsets: [
+          {
+            synset: "network.n.05",
+            pos: "noun [NN]",
+            hypernym: "computer science → interconnected system",
+            definition: "An interconnected system of nodes, computers, or persons transmitting data.",
+            synonyms: ["telecom grid", "data mesh"]
+          },
+          {
+            synset: "network.n.01",
+            pos: "noun [NN]",
+            hypernym: "material → mesh",
+            definition: "An openwork fabric of cords, threads, or wires intersecting at regular intervals.",
+            synonyms: ["mesh", "web", "net"]
+          },
+          {
+            synset: "network.n.02",
+            pos: "noun [NN]",
+            hypernym: "social structure → group",
+            definition: "A group of interconnected people or organizations.",
+            synonyms: ["social network", "association"]
+          }
+        ]
+      },
+      database: {
+        lemma: "database",
+        synsets: [
+          {
+            synset: "database.n.01",
+            pos: "noun [NN]",
+            hypernym: "computer science → structured data store",
+            definition: "An organized body of related information stored electronically and accessible in various queries.",
+            synonyms: ["datastore", "data repository"]
+          }
+        ]
+      },
+      absorb: {
+        lemma: "absorb",
+        synsets: [
+          {
+            synset: "absorb.v.01",
+            pos: "verb [VB]",
+            hypernym: "physical process → assimilate",
+            definition: "Take in or soak up energy, radiation, liquid, or other substances by chemical or physical action.",
+            synonyms: ["assimilate", "take in", "soak up", "ingest"]
+          },
+          {
+            synset: "absorb.v.02",
+            pos: "verb [VB]",
+            hypernym: "mental process → engage",
+            definition: "Take in, learn, or fully comprehend information or study material.",
+            synonyms: ["comprehend", "learn", "grasp"]
+          }
+        ]
+      },
+      make: {
+        lemma: "make",
+        synsets: [
+          {
+            synset: "make.v.01",
+            pos: "verb [VB]",
+            hypernym: "creation → synthesize",
+            definition: "Form or assemble by combining parts, biological reactions, or chemical reactants (e.g. plants make glucose).",
+            synonyms: ["synthesize", "create", "manufacture", "produce"]
+          }
+        ]
+      },
+      produce: {
+        lemma: "produce",
+        synsets: [
+          {
+            synset: "produce.v.01",
+            pos: "verb [VB]",
+            hypernym: "creation → synthesize",
+            definition: "Bring forth, yield, or generate naturally or biologically as a result of a cellular or chemical process.",
+            synonyms: ["generate", "synthesize", "yield", "create"]
+          },
+          {
+            synset: "produce.n.01",
+            pos: "noun [NN]",
+            hypernym: "agriculture → food products",
+            definition: "Fresh fruits and vegetables cultivated on a farm.",
+            synonyms: ["crops", "harvest", "fresh food"]
+          }
+        ]
+      },
+      important: {
+        lemma: "important",
+        synsets: [
+          {
+            synset: "important.a.01",
+            pos: "adjective [JJ]",
+            hypernym: "significance → crucial attribute",
+            definition: "Of great significance, value, or consequence; highly essential for an exam or subject mastery.",
+            synonyms: ["crucial", "essential", "significant", "vital"]
+          },
+          {
+            synset: "important.a.02",
+            pos: "adjective [JJ]",
+            hypernym: "prominence → authority",
+            definition: "Having high status, influence, or academic priority.",
+            synonyms: ["influential", "prominent"]
+          }
+        ]
+      },
+      study: {
+        lemma: "study",
+        synsets: [
+          {
+            synset: "study.v.01",
+            pos: "verb [VB]",
+            hypernym: "academic activity → learn",
+            definition: "Devote time and attention to acquiring knowledge on an academic subject.",
+            synonyms: ["learn", "examine", "investigate", "read"]
+          },
+          {
+            synset: "study.n.01",
+            pos: "noun [NN]",
+            hypernym: "academic work → investigation",
+            definition: "A detailed investigation and analysis of a subject or situation.",
+            synonyms: ["inquiry", "research", "investigation"]
+          }
+        ]
+      },
+      reyes: {
+        lemma: "Reyes",
+        synsets: [
+          {
+            synset: "reyes.nnp.entity",
+            pos: "proper noun [NNP]",
+            hypernym: "named entity → instructor / person",
+            definition: "Proper noun representing an instructor or referenced person (e.g., 'Ma\\'am Reyes').",
+            synonyms: ["Ma'am Reyes", "instructor reference"]
+          }
+        ]
+      },
+      mahalaga: {
+        lemma: "halaga",
+        synsets: [
+          {
+            synset: "mahalaga.tl.01",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Filipino adjective meaning 'important', 'crucial', or 'of high value'.",
+            synonyms: ["important", "crucial", "makabuluhan"]
+          },
+          {
+            synset: "mahalaga.tl.02",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Costly or highly prized in monetary or sentimental value.",
+            synonyms: ["precious", "valuable"]
+          }
+        ]
+      },
+      maintindihan: {
+        lemma: "intindi",
+        synsets: [
+          {
+            synset: "maintindihan.tl.01",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Filipino verb meaning 'to understand' or 'to comprehend'.",
+            synonyms: ["understand", "comprehend", "maunawaan"]
+          },
+          {
+            synset: "maintindihan.tl.02",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "To empathize with someone's feelings or perspective.",
+            synonyms: ["empathize", "relate"]
+          }
+        ]
+      },
+      sobrang: {
+        lemma: "sobra",
+        synsets: [
+          {
+            synset: "sobrang.tl.01",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Filipino modifier meaning 'extremely' or 'excessively'.",
+            synonyms: ["very", "extremely", "labis"]
+          },
+          {
+            synset: "sobrang.tl.02",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Surplus or remainder beyond what is needed.",
+            synonyms: ["excess", "surplus"]
+          }
+        ]
+      },
+      hirap: {
+        lemma: "hirap",
+        synsets: [
+          {
+            synset: "hirap.tl.01",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Filipino noun/adjective denoting difficulty, hardship, or effort required.",
+            synonyms: ["difficult", "hardship"]
+          },
+          {
+            synset: "hirap.tl.02",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Poverty or economic hardship.",
+            synonyms: ["poverty", "destitution"]
+          }
+        ]
+      },
+      kailangan: {
+        lemma: "kailangan",
+        synsets: [
+          {
+            synset: "kailangan.tl.01",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Filipino modal/word meaning 'need' or 'necessary'.",
+            synonyms: ["necessary", "required"]
+          },
+          {
+            synset: "kailangan.tl.02",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Obligation or duty to perform an action.",
+            synonyms: ["obligation", "must"]
+          }
+        ]
+      },
+      aralin: {
+        lemma: "aral",
+        synsets: [
+          {
+            synset: "aralin.tl.01",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Filipino noun meaning 'lesson', 'subject matter', or 'topic to study'.",
+            synonyms: ["lesson", "study topic"]
+          },
+          {
+            synset: "aralin.tl.02",
+            pos: "Tagalog content word",
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Filipino verb meaning to study, examine, or investigate thoroughly.",
+            synonyms: ["study", "examine", "suriin"]
+          }
+        ]
+      }
+    };
+    // Populate top-level fields on each WORDNET_DB entry for direct compatibility
+    Object.keys(WORDNET_DB).forEach(k => {
+      const e = WORDNET_DB[k];
+      if (e.synsets && e.synsets.length) {
+        Object.assign(e, e.synsets[0]);
+      }
+    });
+    const SAMPLE = "Photosynthesis is soooo important daw sa exam!! yung chlorophyll sa leaves absorbs sunlight, then plants make glucose. di ko maintindihan yung light reactions, ask Ma'am Reyes. couldn't finish the Calvin cycle notes. Photosynthesis = glucose + oxygen.";
+    const OCR_SAMPLE = SAMPLE.replace("chlorophyll", "chlorophy11").replace("sunlight", "sunllght");
+    function prepareNote(n) {
+      if (!n) return n;
+      let termsArr = [];
+      try {
+        termsArr = Array.isArray(n.terms) ? n.terms : JSON.parse(n.terms || '[]');
+      } catch (_) {
+        termsArr = Array.isArray(n.terms) ? n.terms : [];
+      }
+      return {
+        ...n,
+        parsedTerms: termsArr,
+        searchContent: `${n.title || ''} ${termsArr.join(' ')} ${n.text || ''} ${n.date || ''}`.toLowerCase()
+      };
+    }
+
+    let archive = [];
+    try {
+      const saved = localStorage.getItem('archiveNodeData');
+      if (saved) {
+        archive = (JSON.parse(saved) || []).map(prepareNote);
+      }
+    } catch (e) {
+      archive = [];
+    }
+
+    function saveArchive() {
+      try {
+        localStorage.setItem('archiveNodeData', JSON.stringify(archive));
+      } catch (e) {
+        console.warn('LocalStorage save failed:', e);
+      }
+    }
+
+    // Backend API Client (Prisma + Express)
+    const API_BASE = window.location.origin.startsWith('http') ? '' : 'http://localhost:3000';
+
+    async function apiFetch(endpoint, options = {}, timeoutMs = 8000) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(API_BASE + endpoint, {
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          ...options
+        });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function fetchArchiveFromDB(showToast = false) {
+      const refreshBtn = $("arc-refresh");
+      const icon = $("arc-refresh-icon");
+      if (icon) {
+        icon.style.transition = "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+        icon.style.transform = "rotate(360deg)";
+      }
+      if (refreshBtn) refreshBtn.disabled = true;
+
+      const remoteNotes = await apiFetch('/api/notes');
+      if (Array.isArray(remoteNotes)) {
+        archive = remoteNotes.map(prepareNote);
+        saveArchive();
+        renderArchive();
+        if (showToast) {
+          toast(`Synced ${remoteNotes.length} note${remoteNotes.length === 1 ? '' : 's'} from database`);
+        }
+      } else if (showToast) {
+        toast("Unable to reach database");
+      }
+
+      setTimeout(() => {
+        if (icon) {
+          icon.style.transition = "none";
+          icon.style.transform = "rotate(0deg)";
+        }
+        if (refreshBtn) refreshBtn.disabled = false;
+      }, 600);
+    }
+
+    async function initArchiveBackend() {
+      await fetchArchiveFromDB(false);
+    }
+    let cur = null, mode = "paste";
+    let currentDetIdx = -1;
+    let editingArchiveIdx = -1;
+
+    // Autocorrection & Spelling Normalization Engine (Chapter 7 & Edit Distance)
+    const KNOWN_WORDS = new Set([
+      ...Object.keys(WORDNET_DB),
+      ...Object.keys(CAT),
+      ...Object.keys(LEMMA),
+      ...Object.values(LEMMA),
+      ...TL_WORDS,
+      ...STOP,
+      ...TL_STOP,
+      ...NONTERM,
+      // Common Academic, Study, & Science vocabulary
+      "biology", "chemistry", "physics", "science", "scientific", "concept", "concepts",
+      "process", "processes", "system", "systems", "function", "functions", "structure", "structures",
+      "chapter", "lesson", "definition", "definitions", "example", "examples", "problem", "solution",
+      "question", "questions", "answer", "answers", "method", "methods", "theory", "theories",
+      "analysis", "student", "students", "teacher", "teachers", "school", "study", "studying", "notes",
+      "review", "produce", "produces", "produced", "absorb", "absorbs", "absorbed",
+      "release", "releases", "released", "synthesize", "synthesizes", "convert", "converts",
+      "transform", "transforms", "increase", "decrease", "important", "importance", "importantly",
+      "different", "difference", "differ", "significant", "significance", "essential", "crucial",
+      "cellular", "organism", "organisms", "molecule", "molecules", "compound", "compounds",
+      "element", "elements", "temperature", "energy", "matter", "living", "nonliving",
+      "light", "dark", "reaction", "reactions", "rate", "state", "change", "changes",
+      "volume", "mass", "weight", "density", "human", "body", "organ", "organs",
+      "tissue", "tissues", "blood", "gas", "gases", "solid", "liquid", "solution", "solutions",
+      "substance", "substances", "property", "properties", "evidence", "statement", "statements",
+      "requirement", "requirements", "performance", "existence", "maintenance", "resistance",
+      "absorbance", "confidence", "relevance", "presence", "patience", "intelligence",
+      "convenience", "independence", "sequence", "sequences", "consequence", "consequences",
+      "distance", "distances", "instance", "instances", "circumstance", "circumstances",
+      "essence", "sentence", "sentences", "influence", "influences", "reference", "references",
+      "experience", "experiences", "patient", "patients", "agent", "agents",
+      "hard", "easy", "fast", "slow", "high", "low", "long", "short", "big", "small",
+      "true", "false", "right", "wrong", "real", "good", "bad", "new", "old", "great",
+      "here", "there", "where", "when", "why", "how", "what", "who", "which",
+      "now", "then", "always", "never", "often", "sometimes",
+      "find", "give", "take", "keep", "hold", "tell", "say", "know", "think", "see",
+      "look", "hear", "feel", "come", "go", "leave", "help", "work", "play", "live",
+      "need", "want", "mean", "seem", "part", "time", "year", "day", "way", "thing",
+      "man", "world", "life", "hand", "eye", "place", "case", "point", "group", "fact",
+      "form", "word", "line", "page", "text", "note", "read", "write", "book", "food",
+      "cool", "really", "free", "tree", "deep"
+    ]);
+
+    const COMMON_TYPOS = {
+      "photosynthesys": "photosynthesis",
+      "photosyntesis": "photosynthesis",
+      "fotosintesis": "photosynthesis",
+      "chlorophyl": "chlorophyll",
+      "chlorophylll": "chlorophyll",
+      "chlorophy11": "chlorophyll",
+      "klorofil": "chlorophyll",
+      "glucuse": "glucose",
+      "glukose": "glucose",
+      "gluc0se": "glucose",
+      "glycose": "glucose",
+      "oxigen": "oxygen",
+      "0xygen": "oxygen",
+      "oksigen": "oxygen",
+      "celular": "cellular",
+      "ce11ular": "cellular",
+      "selular": "cellular",
+      "ce11": "cell",
+      "enrgy": "energy",
+      "energi": "energy",
+      "calvn": "calvin",
+      "calvinn": "calvin",
+      "reaxion": "reaction",
+      "reacton": "reaction",
+      "reaksyon": "reaction",
+      "respiraton": "respiration",
+      "respirashun": "respiration",
+      "mitocondria": "mitochondria",
+      "mitochonria": "mitochondria",
+      "prossess": "process",
+      "prosess": "process",
+      "proseso": "process",
+      "algoritm": "algorithm",
+      "algorithim": "algorithm",
+      "databaes": "database",
+      "datbase": "database",
+      "databse": "database",
+      "netwrok": "network",
+      "netwrk": "network",
+      "inflaton": "inflation",
+      "implasyon": "inflation",
+      "demaand": "demand",
+      "suuply": "supply",
+      "suppli": "supply",
+      "mathemactics": "mathematics",
+      "mathemathics": "mathematics",
+      "matematika": "mathematics",
+      "studing": "studying",
+      "studyng": "studying",
+      "impotant": "important",
+      "importante": "important",
+      "biologi": "biology",
+      "bayolodyi": "biology",
+      "chemestry": "chemistry",
+      "kemistri": "chemistry",
+      "fisiks": "physics",
+      "pisika": "physics",
+      "equasion": "equation",
+      "eqation": "equation",
+      "formla": "formula",
+      "pormula": "formula",
+      "gravty": "gravity",
+      "grabiti": "gravity",
+      "enzym": "enzyme",
+      "ensaym": "enzyme",
+      "membran": "membrane",
+      "membrana": "membrane",
+      "leef": "leaf",
+      "sunllght": "sunlight",
+      "sunlite": "sunlight",
+      "dioxid": "dioxide",
+      "diokside": "dioxide",
+      "maintidihan": "maintindihan",
+      "maiintindihan": "maintindihan",
+      "maintndihan": "maintindihan",
+      "kaylangan": "kailangan",
+      "kailngan": "kailangan",
+      "kelangan": "kailangan",
+      "mahalga": "mahalaga",
+      "mhalaga": "mahalaga",
+      "aralinn": "aralin",
+      "tandahan": "tandaan",
+      "gawenn": "gawin"
+    };
+
+    function editDistance(a, b) {
+      const al = a.length, bl = b.length;
+      if (Math.abs(al - bl) > 1) return 99; // Strict edit distance 1 to prevent false autocorrects
+      const dp = Array.from({ length: al + 1 }, () => new Array(bl + 1).fill(0));
+      for (let i = 0; i <= al; i++) dp[i][0] = i;
+      for (let j = 0; j <= bl; j++) dp[0][j] = j;
+
+      for (let i = 1; i <= al; i++) {
+        for (let j = 1; j <= bl; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+          if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+            dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + 1);
+          }
+        }
+      }
+      return dp[al][bl];
+    }
+
+    function hasValidMorphology(w) {
+      if (w.length < 5) return false;
+      // Valid English derivational suffixes (preserves words like importance, difference, etc.)
+      if (/(ance|ence|tion|sion|ment|ness|ity|ities|able|ible|ial|al|ic|ical|ive|ous|ious|ful|less|ly|ize|ise|ify|ate|ist|ism|logy)$/.test(w)) {
+        return true;
+      }
+      return false;
+    }
+
+    function isKnownWord(w) {
+      if (KNOWN_WORDS.has(w)) return true;
+      if (w.endsWith("s") && KNOWN_WORDS.has(w.slice(0, -1))) return true;
+      if (w.endsWith("es") && KNOWN_WORDS.has(w.slice(0, -2))) return true;
+      if (w.endsWith("ed") && (KNOWN_WORDS.has(w.slice(0, -1)) || KNOWN_WORDS.has(w.slice(0, -2)))) return true;
+      if (w.endsWith("ing") && (KNOWN_WORDS.has(w.slice(0, -3)) || KNOWN_WORDS.has(w.slice(0, -3) + "e"))) return true;
+      if (hasValidMorphology(w)) return true;
+      return false;
+    }
+
+    function applyCasing(original, replacement) {
+      if (original === original.toUpperCase() && original.length > 1) {
+        return replacement.toUpperCase();
+      }
+      if (original.charAt(0) === original.charAt(0).toUpperCase() && original.charAt(0) !== original.charAt(0).toLowerCase()) {
+        return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+      }
+      return replacement.toLowerCase();
+    }
+
+    // Collapse stretched words with 3+ repeated characters (e.g. soooo -> so, pleeease -> please, cooool -> cool)
+    function collapseStretched(word) {
+      if (!/([A-Za-z])\1{2,}/.test(word)) return word;
+      const lower = word.toLowerCase();
+
+      // Candidate 1: Collapse 3+ repeats to 1 character (soooo -> so, pleeease -> please)
+      const cand1 = lower.replace(/([a-z])\1{2,}/g, "$1");
+      // Candidate 2: Collapse 3+ repeats to 2 characters (cooool -> cool, goooood -> good)
+      const cand2 = lower.replace(/([a-z])\1{2,}/g, "$1$1");
+
+      let best = null;
+      if (isKnownWord(cand1)) {
+        best = cand1;
+      } else if (isKnownWord(cand2)) {
+        best = cand2;
+      } else if (COMMON_TYPOS[cand1]) {
+        best = COMMON_TYPOS[cand1];
+      } else if (COMMON_TYPOS[cand2]) {
+        best = COMMON_TYPOS[cand2];
+      } else {
+        best = cand1;
+      }
+
+      return applyCasing(word, best);
+    }
+
+    function autocorrectWord(word) {
+      const lower = word.toLowerCase();
+      // CRITICAL GUARD: Already-known, morphologically valid, or short words must NEVER be changed!
+      if (isKnownWord(lower) || lower.length <= 2 || /^\d+$/.test(lower)) {
+        return { word, corrected: false };
+      }
+
+      // Exact known typos map
+      if (COMMON_TYPOS[lower]) {
+        const fixed = applyCasing(word, COMMON_TYPOS[lower]);
+        return { word: fixed, original: word, corrected: true, replacement: COMMON_TYPOS[lower] };
+      }
+
+      // Strict single-edit distance against known vocabulary (length >= 5 only to protect short words)
+      if (lower.length >= 5) {
+        let bestMatch = null;
+        let minDistance = 99;
+        for (const known of KNOWN_WORDS) {
+          if (Math.abs(known.length - lower.length) > 1) continue;
+          if (known[0] !== lower[0]) continue; // First letter must match
+
+          // Suffix collision guard: Never swap -ance/-ence with -ant/-ent (e.g. importance vs important)
+          const wEndsAnce = /(ance|ence)$/.test(lower);
+          const kEndsAnt = /(ant|ent)$/.test(known);
+          if (wEndsAnce && kEndsAnt) continue;
+          const wEndsAnt = /(ant|ent)$/.test(lower);
+          const kEndsAnce = /(ance|ence)$/.test(known);
+          if (wEndsAnt && kEndsAnce) continue;
+
+          const d = editDistance(lower, known);
+          if (d === 1 && d < minDistance) {
+            minDistance = d;
+            bestMatch = known;
+          }
+        }
+        if (bestMatch) {
+          const fixed = applyCasing(word, bestMatch);
+          return { word: fixed, original: word, corrected: true, replacement: bestMatch };
+        }
+      }
+
+      return { word, corrected: false };
+    }
+
+    function normalize(s) {
+      const corrections = [];
+      const seenCorrections = new Set();
+
+      function recordCorrection(orig, fixed) {
+        if (!orig || !fixed || orig.toLowerCase() === fixed.toLowerCase()) return;
+        const key = `${orig.toLowerCase()}->${fixed.toLowerCase()}`;
+        if (!seenCorrections.has(key)) {
+          seenCorrections.add(key);
+          corrections.push({ original: orig, corrected: fixed });
+        }
+      }
+
+      // 1. Contractions expansion (Chapter 7: e.g. couldn't -> could not, it's -> it is, you're -> you are)
+      s = s.replace(/\b([A-Za-z]+['’](?:t|s|m|re|ve|ll|d))\b/gi, (match) => {
+        const standardKey = match.toLowerCase().replace("’", "'");
+        if (CONTR[standardKey]) {
+          const repl = applyCasing(match, CONTR[standardKey]);
+          recordCorrection(match, repl);
+          return repl;
+        }
+        return match;
+      });
+
+      // 2. Shortcuts & Abbreviations (e.g. pls -> please, imp -> important, yun -> yung, di -> hindi, w/ -> with)
+      // Slash shortcuts
+      s = s.replace(/\b(w\/o|w\/|b\/c)\b/gi, (match) => {
+        const l = match.toLowerCase();
+        if (SHORTCUTS[l]) {
+          const repl = applyCasing(match, SHORTCUTS[l]);
+          recordCorrection(match, repl);
+          return repl;
+        }
+        return match;
+      });
+
+      // Standard word shortcuts
+      s = s.replace(/\b([A-Za-z]+)\b/gi, (match) => {
+        const l = match.toLowerCase();
+        if (SHORTCUTS[l]) {
+          const repl = applyCasing(match, SHORTCUTS[l]);
+          recordCorrection(match, repl);
+          return repl;
+        }
+        return match;
+      });
+
+      // 3. Stretched words collapsing (e.g. soooo -> so, pleeease -> please, cooool -> cool, sooobrang -> sobrang)
+      s = s.replace(/\b([A-Za-z]+)\b/g, (match) => {
+        if (/([A-Za-z])\1{2,}/.test(match)) {
+          const collapsed = collapseStretched(match);
+          if (collapsed.toLowerCase() !== match.toLowerCase()) {
+            recordCorrection(match, collapsed);
+            return collapsed;
+          }
+        }
+        return match;
+      });
+
+      // 4. Repeated punctuation
+      s = s.replace(/([!?.])\1{2,}/g, "$1$1");
+
+      // 5. Likely OCR confusions corrected (Chapter 7)
+      s = s.replace(/\bchlorophy11\b/gi, (m) => { recordCorrection(m, "chlorophyll"); return "chlorophyll"; })
+           .replace(/\bsunllght\b/gi, (m) => { recordCorrection(m, "sunlight"); return "sunlight"; })
+           .replace(/(\b[a-z]+)11\b/gi, "$1ll")
+           .replace(/(\b[a-z]+)1([a-z]+\b)/gi, "$1l$2")
+           .replace(/(\b[a-z]+)0([a-z]+\b)/gi, "$1o$2");
+
+      // 6. Run-on notes spacing for sentence and word splitting (Chapters 3 & 4)
+      s = s.replace(/([.!?])([A-Za-z])/g, "$1 $2").replace(/,([A-Za-z])/g, ", $2");
+      s = s.replace(/[ \t]+/g, " ").trim();
+
+      // 7. Intelligent Spell Checking & Error Autocorrection for Cleaned Words Section
+      s = s.replace(/[A-Za-z0-9]+(?:'[A-Za-z]+)?/g, (match) => {
+        const res = autocorrectWord(match);
+        if (res.corrected) {
+          recordCorrection(match, res.word);
+          return res.word;
+        }
+        return match;
+      });
+
+      return { clean: s, corrections };
+    }
+
+    function lemma(w) {
+      if (LEMMA[w]) return LEMMA[w];
+      if (w.endsWith("ies") && w.length > 4) return w.slice(0, -3) + "y";
+      if (w.endsWith("es") && /(ch|sh|x|ss|zz)es$/i.test(w)) return w.slice(0, -2);
+      if (w.length > 4 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) return w.slice(0, -1);
+      return w;
+    }
+
+    // Contextual POS Tagger Functions (NLTK Chapter 9 & Brill-style contextual rules)
+    function morphologyTag(w) {
+      const l = w.toLowerCase();
+      if (l.endsWith("ly") && l.length > 4) return "RB";
+      if (/(\b[a-z]+)(able|ible|ous|ious|ful|less|ive|ic|ical|al)$/.test(l)) return "JJ";
+      if (/(\b[a-z]+)(tion|sion|ment|ness|ity|sis|logy|ist|ism|ance|ence)$/.test(l)) return "NN";
+      if (l.endsWith("ing") && l.length > 5) return "VBG";
+      if (l.endsWith("ed") && l.length > 4) return "VBD";
+      if (/(\b[a-z]+)(ize|ise|ify|ate)$/.test(l)) return "VB";
+      return null;
+    }
+
+    function tokenizeSentences(cleanText) {
+      const rawSentences = cleanText.split(/(?<=[.!?])\s+|\n+/).filter(s => s.trim().length > 0);
+      const sentences = [];
+
+      for (const s of rawSentences) {
+        const tokens = [];
+        const regex = /[A-Za-z][A-Za-z'-]*/g;
+        let match;
+        while ((match = regex.exec(s)) !== null) {
+          tokens.push({
+            text: match[0],
+            lower: match[0].toLowerCase(),
+            index: match.index,
+            isCapitalized: /^[A-Z]/.test(match[0]),
+            tag: null
+          });
+        }
+        if (tokens.length > 0) {
+          sentences.push({ text: s, tokens });
+        }
+      }
+      return sentences;
+    }
+
+    function tagSentences(sentences) {
+      for (const sent of sentences) {
+        const toks = sent.tokens;
+        const n = toks.length;
+
+        // Pass 1: Tag closed-class tokens, honorifics, and explicit named entities
+        for (let i = 0; i < n; i++) {
+          const t = toks[i];
+          const l = t.lower;
+          const prev = i > 0 ? toks[i - 1] : null;
+          const next = i < n - 1 ? toks[i + 1] : null;
+
+          if (DETERMINERS.has(l)) t.tag = "DT";
+          else if (MODALS.has(l)) t.tag = "MD";
+          else if (COPULAS.has(l)) t.tag = l === "be" ? "VB" : (l === "been" ? "VBN" : (l === "being" ? "VBG" : (l === "was" || l === "were" ? "VBD" : "VBZ")));
+          else if (AUX_HAVE.has(l)) t.tag = l === "had" ? "VBD" : "VBZ";
+          else if (AUX_DO.has(l)) t.tag = l === "did" ? "VBD" : (l === "does" ? "VBZ" : "VBP");
+          else if (PREPOSITIONS.has(l)) t.tag = "IN";
+          else if (PRONOUNS.has(l)) t.tag = "PRP";
+          else if (TL_STOP.has(l)) t.tag = "TL_STOP";
+          else if (TL_WORDS.has(l)) t.tag = "TL";
+          else if (HONORIFICS.has(l)) t.tag = "NNP";
+          else if (KNOWN_ENTITIES.has(l)) t.tag = "NNP";
+          else if (prev && HONORIFICS.has(prev.lower)) {
+            t.tag = "NNP"; // E.g., Ma'am Reyes, Dr. Calvin
+          } else if (t.isCapitalized && next && next.isCapitalized) {
+            t.tag = "NNP"; // E.g., Melvin Calvin
+          } else if (i > 0 && t.isCapitalized && (!KNOWN_NOUNS.has(l) && !KNOWN_ADJECTIVES.has(l) && !KNOWN_VERBS.has(l))) {
+            t.tag = "NNP"; // Proper noun mid-sentence
+          }
+        }
+
+        // Pass 2: Contextual Syntactic Rules (Brill & NLTK Chapter 9 context rules)
+        for (let i = 0; i < n; i++) {
+          const t = toks[i];
+          if (t.tag && t.tag !== "TL") continue;
+
+          const l = t.lower;
+          const prev = i > 0 ? toks[i - 1] : null;
+          const prev2 = i > 1 ? toks[i - 2] : null;
+          const next = i < n - 1 ? toks[i + 1] : null;
+
+          // Rule 1: Modal + [not]? + Verb -> Base Verb VB
+          if (prev && (prev.tag === "MD" || prev.lower === "not" && prev2 && prev2.tag === "MD")) {
+            t.tag = "VB";
+            continue;
+          }
+
+          // Rule 2: Infinitive marker "to" + Verb -> Base Verb VB
+          if (prev && prev.lower === "to") {
+            t.tag = "VB";
+            continue;
+          }
+
+          // Rule 3: Copula + (Intensifier)* + Word -> Predicate Adjective JJ or Participle
+          const isAfterCopula = (prev && COPULAS.has(prev.lower)) ||
+            (prev && INTENSIFIERS.has(prev.lower) && prev2 && COPULAS.has(prev2.lower));
+          if (isAfterCopula) {
+            if (l.endsWith("ing")) {
+              t.tag = "VBG";
+              continue;
+            }
+            if (l.endsWith("ed")) {
+              t.tag = "VBN";
+              continue;
+            }
+            if (KNOWN_ADJECTIVES.has(l) || morphologyTag(t.text) === "JJ" || !KNOWN_NOUNS.has(l)) {
+              t.tag = "JJ";
+              continue;
+            }
+          }
+
+          // Rule 4: Modifier before confirmed noun (Attributive Adjective JJ or Proper NNP)
+          if (next && (KNOWN_NOUNS.has(next.lower) || next.lower.endsWith("tion") || next.lower.endsWith("s") && KNOWN_NOUNS.has(lemma(next.lower)))) {
+            if (t.isCapitalized && i > 0) {
+              t.tag = "NNP";
+              continue;
+            }
+            if (KNOWN_ADJECTIVES.has(l) || l === "cellular" || l === "light" || l === "dark" || morphologyTag(t.text) === "JJ") {
+              t.tag = "JJ";
+              continue;
+            }
+          }
+
+          // Rule 5: Clause-initial Imperative Verb (e.g. "ask Ma'am Reyes", "study chapter 5")
+          if ((i === 0 || (prev && (prev.lower === "then" || prev.text.match(/[,;]$/)))) && (KNOWN_VERBS.has(l) || l === "ask" || l === "study" || l === "review" || l === "finish")) {
+            t.tag = "VB";
+            continue;
+          }
+
+          // Rule 6: Subject + Verb agreement
+          // 3rd Person Singular Verb VBZ (e.g., "chlorophyll ... absorbs sunlight", "it produces glucose")
+          if (l.endsWith("s") && !l.endsWith("ss") && (KNOWN_VERBS.has(l.slice(0, -1)) || KNOWN_VERBS.has(l.slice(0, -2)) || l === "absorbs" || l === "produces" || l === "makes")) {
+            t.tag = "VBZ";
+            continue;
+          }
+
+          // Plural subject + Base Verb VBP / VB (e.g., "plants make glucose", "leaves absorb light")
+          if (prev && (prev.lower.endsWith("s") || prev.lower === "they" || prev.lower === "plants" || prev.lower === "leaves") && (KNOWN_VERBS.has(l) || l === "make" || l === "absorb")) {
+            t.tag = "VBP";
+            continue;
+          }
+
+          // Pass 3: Morphological and Lexicon Fallbacks
+          const morph = morphologyTag(t.text);
+          if (morph) {
+            t.tag = morph;
+            continue;
+          }
+
+          if (KNOWN_VERBS.has(l)) {
+            t.tag = "VB";
+            continue;
+          }
+
+          if (KNOWN_ADJECTIVES.has(l)) {
+            t.tag = "JJ";
+            continue;
+          }
+
+          if (INTENSIFIERS.has(l)) {
+            t.tag = "RB";
+            continue;
+          }
+
+          // Plural Noun check
+          if (l.endsWith("s") && !l.endsWith("ss") && (KNOWN_NOUNS.has(lemma(l)) || KNOWN_NOUNS.has(l.slice(0, -1)) || l === "leaves" || l === "plants" || l === "reactions" || l === "notes")) {
+            t.tag = "NNS";
+            continue;
+          }
+
+          // Capitalized Proper Noun check (mid-sentence)
+          if (t.isCapitalized && i > 0) {
+            t.tag = "NNP";
+            continue;
+          }
+
+          // Default Noun
+          t.tag = "NN";
+        }
+      }
+    }
+
+    function getPosClass(tag) {
+      if (!tag) return 'pos-nn';
+      const t = tag.toUpperCase();
+      if (t === 'NNP' || t === 'NNPS') return 'pos-nnp';
+      if (t === 'NN' || t === 'NNS') return 'pos-nn';
+      if (t.startsWith('VB')) return 'pos-vb';
+      if (t.startsWith('JJ')) return 'pos-jj';
+      if (t.startsWith('RB')) return 'pos-rb';
+      if (t === 'MD') return 'pos-md';
+      if (t === 'TL' || t === 'TAGALOG') return 'pos-tl';
+      return 'pos-nn';
+    }
+
+    function getPosDescription(tag) {
+      if (!tag) return 'Noun [NN]';
+      const t = tag.toUpperCase();
+      switch (t) {
+        case 'NN': return 'Noun, singular/mass [NN]';
+        case 'NNS': return 'Noun, plural [NNS]';
+        case 'NNP': return 'Proper noun, named entity [NNP]';
+        case 'VB': return 'Verb, base form / infinitive [VB]';
+        case 'VBZ': return 'Verb, 3rd person singular present [VBZ]';
+        case 'VBP': return 'Verb, present non-3rd person [VBP]';
+        case 'VBD': return 'Verb, past tense [VBD]';
+        case 'VBG': return 'Verb, gerund / present participle [VBG]';
+        case 'VBN': return 'Verb, past participle [VBN]';
+        case 'JJ': return 'Adjective, descriptive [JJ]';
+        case 'JJR': return 'Adjective, comparative [JJR]';
+        case 'JJS': return 'Adjective, superlative [JJS]';
+        case 'RB': return 'Adverb [RB]';
+        case 'MD': return 'Modal verb [MD]';
+        case 'TL': return 'Tagalog content word [TL]';
+        default: return `Part of speech: [${t}]`;
+      }
+    }
+
+    function renderPosBadge(tag) {
+      const cls = getPosClass(tag);
+      const desc = getPosDescription(tag);
+      return `<b class="pos-badge ${cls}" title="${esc(desc)}">${esc(tag || 'NN')}</b>`;
+    }
+
+    function getContextualTagForTerm(term, text) {
+      if (!term) return 'NN';
+      if (TL_WORDS.has(term.toLowerCase())) return 'TL';
+      if (KNOWN_ENTITIES.has(term.toLowerCase())) return 'NNP';
+      if (text) {
+        const sentences = tokenizeSentences(text);
+        tagSentences(sentences);
+        for (const sent of sentences) {
+          for (const t of sent.tokens) {
+            if (t.lower === term.toLowerCase() || lemma(t.lower) === term.toLowerCase()) {
+              if (t.tag && t.tag !== 'DT' && t.tag !== 'IN' && t.tag !== 'PRP' && t.tag !== 'TL_STOP') {
+                return t.tag;
+              }
+            }
+          }
+        }
+      }
+      const morph = morphologyTag(term);
+      if (morph) return morph;
+      if (KNOWN_VERBS.has(term.toLowerCase())) return 'VB';
+      if (KNOWN_ADJECTIVES.has(term.toLowerCase())) return 'JJ';
+      if (KNOWN_NOUNS.has(term.toLowerCase()) || KNOWN_NOUNS.has(lemma(term.toLowerCase()))) return 'NN';
+      if (/^[A-Z]/.test(term)) return 'NNP';
+      return 'NN';
+    }
+
+    function analyze(raw) {
+      const norm = normalize(raw);
+      const clean = norm.clean;
+      const corrections = norm.corrections || [];
+
+      const sentences = tokenizeSentences(clean);
+      tagSentences(sentences);
+
+      const counts = {};
+      const tags = {};
+      const untagged = new Set();
+
+      for (const sent of sentences) {
+        for (const t of sent.tokens) {
+          const l = t.lower;
+          if (ALL_STOP.has(l) || l.length < 3 && !TL_WORDS.has(l)) continue;
+          if (t.tag === "TL" || TL_WORDS.has(l)) {
+            untagged.add(l);
+            continue;
+          }
+
+          if (t.tag === "DT" || t.tag === "IN" || t.tag === "PRP" || t.tag === "CC" || t.tag === "TL_STOP") {
+            continue;
+          }
+
+          const isProper = t.tag === "NNP";
+          const key = isProper
+            ? (t.isCapitalized ? t.text : t.text.charAt(0).toUpperCase() + t.text.slice(1))
+            : (t.tag.startsWith("NN") ? lemma(l) : l);
+
+          counts[key] = (counts[key] || 0) + 1;
+          if (t.tag === "NNS") {
+            tags[key] = "NNS";
+            tags[l] = "NNS";
+          } else if (!tags[key] || (tags[key] === "NN" && t.tag !== "NN")) {
+            tags[key] = t.tag;
+          }
+          tags[l] = t.tag;
+        }
+      }
+
+      const terms = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+      return { clean, terms, counts, tags, untagged: [...untagged], corrections };
+    }
+
+    function highlight(clean, terms) {
+      const set = new Set(terms.map(t => t.toLowerCase()));
+      return esc(clean).replace(/[A-Za-z][A-Za-z'-]*/g, w => {
+        const l = w.toLowerCase(); return set.has(l) || set.has(lemma(l)) ? "<mark>" + w + "</mark>" : w;
+      });
+    }
+
+    function renderReviewChips() {
+      if (!cur) return;
+      const terms = cur.terms || [];
+      const tags = cur.tags || {};
+      const untagged = cur.untagged || [];
+
+      $("terms").innerHTML = terms.map(t => {
+        const tag = tags[t] || getContextualTagForTerm(t, cur.clean);
+        return `
+<div class="chip-wrap">
+  <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+    <button class="chip-btn" onclick="toggleDef(this, '${esc(t)}', '${esc(tag)}')" title="Click to view WordNet & Corpus definition (${esc(getPosDescription(tag))})">${esc(t)} ${renderPosBadge(tag)}</button>
+    <button class="chip-del" onclick="removeReviewTerm(event, '${esc(t)}')" title="Remove term" style="border:none; background:transparent; cursor:pointer; color:var(--mute); padding:6px 10px; font-size:16px; line-height:1;">&times;</button>
+  </div>
+  <div class="term-dict"><div class="term-dict-inner"></div></div>
+</div>`;
+      }).join("") + untagged.map(t => `
+<div class="chip-wrap" style="border-style:dashed; background:transparent;">
+  <button class="chip-btn" style="color:var(--mute);" onclick="toggleDef(this, '${esc(t)}', 'TL')" title="Click to view Taglish corpus information">${esc(t)} ${renderPosBadge('TL')}</button>
+  <div class="term-dict"><div class="term-dict-inner"></div></div>
+</div>`).join("");
+
+      const cats = [...new Set(terms.map(t => CAT[t.toLowerCase()]).filter(Boolean))];
+      $("cats").innerHTML = cats.length ? cats.map(c => `<span class="chip">${esc(c)}</span>`).join("") : '<span class="sub">No categories matched.</span>';
+
+      const top = terms.slice(0, 5);
+      const max = (top.length && cur.counts && cur.counts[top[0]]) ? cur.counts[top[0]] : 1;
+      $("bars").innerHTML = top.length ? top.map(t => {
+        const count = (cur.counts && cur.counts[t]) || 1;
+        const pct = Math.min(100, Math.max(10, Math.round((count / max) * 100)));
+        return `<div class="bar"><span>${esc(t)}</span><div class="bar-track"><i style="width:${pct}%"></i></div><span>${count}</span></div>`;
+      }).join("") : '<span class="sub">No frequent keywords.</span>';
+    }
+
+    window.removeReviewTerm = function(e, term) {
+      if (e) e.stopPropagation();
+      if (!cur || !cur.terms) return;
+      cur.terms = cur.terms.filter(t => t.toLowerCase() !== term.toLowerCase());
+      renderReviewChips();
+      $("outClean").innerHTML = highlight(cur.clean, cur.terms);
+    };
+
+    function addReviewTerm() {
+      const input = $("add-term-input");
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) return;
+      if (!cur) return;
+      if (!cur.terms) cur.terms = [];
+      const lower = val.toLowerCase();
+      if (!cur.terms.some(t => t.toLowerCase() === lower)) {
+        cur.terms.push(val);
+        if (!cur.counts) cur.counts = {};
+        cur.counts[val] = (cur.counts[val] || 0) + 1;
+        if (!cur.tags) cur.tags = {};
+        cur.tags[val] = getContextualTagForTerm(val, cur.clean);
+        renderReviewChips();
+        $("outClean").innerHTML = highlight(cur.clean, cur.terms);
+      }
+      input.value = "";
+    }
+
+    function show(v) {
+      ["new", "res", "arc", "det", "set"].forEach(x => $("v-" + x).hidden = x !== v);
+      $("t-new").setAttribute("aria-selected", v === "new" || (v === "res" && editingArchiveIdx === -1));
+      $("t-arc").setAttribute("aria-selected", v === "arc" || v === "det" || (v === "res" && editingArchiveIdx !== -1));
+      $("t-set").setAttribute("aria-selected", v === "set");
+      window.scrollTo(0, 0);
+    }
+    let toastTimer;
+    function toast(t) {
+      const el = $("toast"); el.textContent = t; el.classList.add("on");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("on"), 2200);
+    }
+
+    const wordNetCache = new Map();
+    async function getWordNetInfo(rawWord, forcedTag = null) {
+      const w = rawWord.trim();
+      const lower = w.toLowerCase();
+      const lem = lemma(lower);
+      const cacheKey = `${lower}:${forcedTag || ''}`;
+      if (wordNetCache.has(cacheKey)) {
+        return wordNetCache.get(cacheKey);
+      }
+
+      function cacheAndReturn(res) {
+        wordNetCache.set(cacheKey, res);
+        return res;
+      }
+
+      // 1. Check exact match in local WORDNET_DB
+      const localEntry = WORDNET_DB[lower] || WORDNET_DB[lem];
+      if (localEntry) {
+        const synsets = localEntry.synsets && localEntry.synsets.length ? [...localEntry.synsets] : [localEntry];
+        if (forcedTag) {
+          const ft = forcedTag.toUpperCase();
+          let targetType = '';
+          if (ft.startsWith('VB')) targetType = 'verb';
+          else if (ft.startsWith('JJ')) targetType = 'adjective';
+          else if (ft.startsWith('RB')) targetType = 'adverb';
+          else if (ft.startsWith('NN')) targetType = 'noun';
+
+          if (targetType) {
+            synsets.sort((a, b) => {
+              const aMatch = (a.pos && a.pos.toLowerCase().includes(targetType)) ? 1 : 0;
+              const bMatch = (b.pos && b.pos.toLowerCase().includes(targetType)) ? 1 : 0;
+              return bMatch - aMatch;
+            });
+          }
+        }
+        return cacheAndReturn({ ...localEntry, term: w, lemma: localEntry.lemma || lem, synsets, ...synsets[0] });
+      }
+
+      // 2. Check Tagalog Corpus words
+      if (TL_WORDS.has(lower) || TL_WORDS.has(lem)) {
+        const synsets = [
+          {
+            synset: `${lower}.tl.01`,
+            pos: "Tagalog content word",
+            lemma: lem,
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: "Filipino/Tagalog word identified in note text, preserved in original form without English modification.",
+            synonyms: ["Taglish vocabulary", "untagged concept"]
+          }
+        ];
+        return cacheAndReturn({
+          term: w,
+          lemma: lem,
+          synsets,
+          ...synsets[0]
+        });
+      }
+
+      // 3. Query Express backend WordNet API
+      try {
+        const remote = await apiFetch('/api/wordnet/' + encodeURIComponent(lower));
+        if (remote && (remote.definition || (remote.synsets && remote.synsets.length))) {
+          const synsets = remote.synsets && remote.synsets.length ? remote.synsets : [remote];
+          return cacheAndReturn({ ...remote, term: w, lemma: remote.lemma || lem, synsets, ...synsets[0] });
+        }
+      } catch (e) {}
+
+      // 4. Fallback to free public dictionary API
+      try {
+        const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(lem));
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data[0]) {
+            const entry = data[0];
+            const synsets = [];
+            let sNum = 1;
+
+            if (Array.isArray(entry.meanings)) {
+              for (const m of entry.meanings) {
+                const partOfSpeech = m.partOfSpeech || "noun";
+                const posLetter = partOfSpeech === 'noun' ? 'n' : (partOfSpeech === 'verb' ? 'v' : (partOfSpeech === 'adjective' ? 'a' : 's'));
+                const posTag = forcedTag || (partOfSpeech === 'noun' ? 'NN' : (partOfSpeech === 'verb' ? 'VB' : (partOfSpeech === 'adjective' ? 'JJ' : partOfSpeech.toUpperCase())));
+                const mSyns = Array.isArray(m.synonyms) ? m.synonyms.slice(0, 4) : [];
+                const hyper = CAT[lower] || CAT[lem] || `${partOfSpeech} concept → general lexicon`;
+
+                if (Array.isArray(m.definitions)) {
+                  for (const d of m.definitions.slice(0, 3)) {
+                    if (!d.definition) continue;
+                    const dSyns = Array.isArray(d.synonyms) && d.synonyms.length ? d.synonyms.slice(0, 4) : mSyns;
+                    synsets.push({
+                      synset: `${lem}.${posLetter}.0${sNum++}`,
+                      pos: `${partOfSpeech} [${posTag}]`,
+                      hypernym: hyper,
+                      definition: d.definition,
+                      synonyms: dSyns.length ? dSyns : (mSyns.length ? mSyns : ["related term"]),
+                      example: d.example || null
+                    });
+                  }
+                }
+              }
+            }
+
+            if (synsets.length > 0) {
+              return cacheAndReturn({
+                term: w,
+                lemma: lem,
+                synsets,
+                ...synsets[0]
+              });
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 5. Intelligent WordNet Corpus fallback for domain/academic terms
+      const isProper = /^[A-Z]/.test(w) || forcedTag === 'NNP';
+      const posTag = forcedTag || (isProper ? 'NNP' : 'NN');
+      const hyper = CAT[lower] || CAT[lem] || (isProper ? 'named entity' : 'academic domain concept');
+
+      const synsets = [
+        {
+          synset: `${lem}.${isProper ? 'nnp' : 'n'}.01`,
+          pos: isProper ? 'proper noun [NNP]' : 'noun [NN]',
+          lemma: lem,
+          hypernym: hyper,
+          definition: isProper 
+            ? `Named entity or proper noun referenced in the study note context.` 
+            : `Core academic concept identified in note context, categorized under ${hyper}.`,
+          synonyms: [lem, hyper]
+        }
+      ];
+
+      return cacheAndReturn({
+        term: w,
+        lemma: lem,
+        synsets,
+        ...synsets[0]
+      });
+    }
+
+    window.stepSynset = function (btn, delta) {
+      const dict = btn.closest('.term-dict');
+      if (!dict || !dict._wordNetInfo) return;
+      const synsets = dict._wordNetInfo.synsets || [dict._wordNetInfo];
+      if (!synsets.length) return;
+      dict._currentSynsetIdx = (dict._currentSynsetIdx + delta + synsets.length) % synsets.length;
+      renderSynsetContent(dict);
+    };
+
+    window.renderSynsetContent = function (dict) {
+      const inner = dict.querySelector('.term-dict-inner');
+      if (!inner) return;
+      const info = dict._wordNetInfo;
+      const word = dict._targetWord || info.term || '';
+      const synsets = (info.synsets && info.synsets.length) ? info.synsets : [info];
+      const total = synsets.length;
+      const idx = Math.max(0, Math.min(dict._currentSynsetIdx || 0, total - 1));
+      const current = synsets[idx] || synsets[0];
+      const freqText = dict._freqText || '';
+
+      const synsList = (current.synonyms && current.synonyms.length) ? current.synonyms : (info.synonyms || []);
+      const synsHtml = synsList.length
+        ? `<div style="margin-top: 8px; font-size: 11px; color: var(--mute); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+             <span style="font-weight: 600; color: var(--ink);">Related:</span>
+             ${synsList.map(s => `<span style="padding: 1px 6px; border-radius: 4px; background: var(--bg); border: 1px solid var(--line);">${esc(s)}</span>`).join("")}
+           </div>`
+        : "";
+
+      const exampleHtml = current.example
+        ? `<div style="margin-top: 6px; font-size: 11px; font-style: italic; color: var(--mute); border-left: 2px solid #3b82f6; padding-left: 8px;">
+             &ldquo;${esc(current.example)}&rdquo;
+           </div>`
+        : "";
+
+      const pagerHtml = total > 1
+        ? `<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: rgba(66, 133, 244, 0.07); border: 1px solid rgba(66, 133, 244, 0.2); border-radius: 6px; padding: 5px 10px;">
+             <div style="display: flex; align-items: center; gap: 6px;">
+               <span style="font-size: 11px; font-weight: 700; color: #1d4ed8;">Meaning ${idx + 1} of ${total}</span>
+               <span style="font-size: 10px; color: var(--mute);">(${total} synset meanings)</span>
+             </div>
+             <div style="display: flex; align-items: center; gap: 5px;">
+               <button class="synset-nav-btn" onclick="stepSynset(this, -1)" title="Previous synset meaning" style="border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">‹ Prev</button>
+               <button class="synset-nav-btn" onclick="stepSynset(this, 1)" title="Next synset meaning" style="border: 1px solid #3b82f6; background: #2563eb; color: #fff; border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Next Meaning ›</button>
+             </div>
+           </div>`
+        : "";
+
+      inner.innerHTML = `
+        <div style="padding: 10px 4px 14px 4px; line-height: 1.5; font-size: 12px; text-align: left;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 700; font-size: 14px; color: var(--ink);">${esc(info.term || word)}</span>
+              <span style="font-size: 10px; font-family: monospace; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: rgba(66, 133, 244, 0.12); color: #2563eb;">${esc(current.synset || info.synset || '')}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: var(--fill); color: var(--mute); text-transform: uppercase;">${esc(current.pos || info.pos || 'NN')}</span>
+              ${freqText}
+            </div>
+          </div>
+
+          ${pagerHtml}
+
+          <div style="font-size: 11px; color: #0284c7; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <span>${esc(current.hypernym || info.hypernym || '')}</span>
+          </div>
+
+          <div style="color: var(--ink); margin-bottom: 6px; line-height: 1.6; font-size: 12px; background: var(--bg); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
+              <span style="font-weight: 600; color: var(--mute); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;">WordNet Definition${total > 1 ? ` (Sense ${idx + 1} of ${total})` : ''}</span>
+              ${total > 1 ? `<span onclick="stepSynset(this, 1)" style="font-size: 10px; color: #2563eb; cursor: pointer; font-weight: 600;">Next Meaning ›</span>` : ''}
+            </div>
+            <div>${esc(current.definition || info.definition || 'No definition available.')}</div>
+            ${exampleHtml}
+          </div>
+
+          <div style="font-size: 10px; color: var(--mute); margin-top: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+            <span style="font-family: monospace;">Lemma: ${esc(info.lemma || word)}</span>
+            ${total > 1 ? `<span style="color: #2563eb; font-weight: 600; cursor: pointer;" onclick="stepSynset(this, 1)">Cycle meanings (${(idx + 1) % total + 1}/${total}) ↻</span>` : ''}
+          </div>
+
+          ${synsHtml}
+        </div>`;
+    };
+
+    window.toggleDef = async function (btn, word, tag) {
+      const group = btn.closest('.chip-wrap');
+      if (!group) return;
+      const dict = group.querySelector('.term-dict');
+      if (!dict) return;
+
+      if (dict.classList.contains('open')) {
+        dict.classList.remove('open');
+        group.classList.remove('chip-wrap-active');
+        btn.style.background = 'transparent';
+        return;
+      }
+
+      document.querySelectorAll('.term-dict.open').forEach(el => {
+        if (el !== dict) {
+          el.classList.remove('open');
+          const p = el.closest('.chip-wrap');
+          if (p) {
+            p.classList.remove('chip-wrap-active');
+            const b = p.querySelector('.chip-btn');
+            if (b) b.style.background = 'transparent';
+          }
+        }
+      });
+
+      dict.classList.add('open');
+      group.classList.add('chip-wrap-active');
+      btn.style.background = 'rgba(66, 133, 244, 0.08)';
+
+      if (!dict._wordNetInfo) {
+        const inner = dict.querySelector('.term-dict-inner');
+        inner.innerHTML = `
+          <div style="padding: 10px 4px 12px 4px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mute);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+              <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+              <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+            </svg>
+            Fetching WordNet synsets & lexical information...
+          </div>`;
+
+        let freqText = "";
+        if (cur && cur.counts && (cur.counts[word] || cur.counts[word.toLowerCase()])) {
+          const cnt = cur.counts[word] || cur.counts[word.toLowerCase()];
+          freqText = `<span style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: rgba(34, 197, 94, 0.12); color: #16a34a; font-weight: 600;">FreqDist: ${cnt}x in note</span>`;
+        }
+
+        const info = await getWordNetInfo(word, tag);
+        dict._wordNetInfo = info;
+        dict._currentSynsetIdx = 0;
+        dict._freqText = freqText;
+        dict._targetWord = word;
+      }
+
+      renderSynsetContent(dict);
+    };
+
+    function process() {
+      const raw = $("raw").value.trim();
+      if (!raw) { toast("Add a note first"); $("raw").focus(); return }
+      const a = analyze(raw);
+      if (!a.terms.length) { toast("No key terms found. Try a longer note."); return }
+
+      const btn = $("go");
+      const origBtn = btn.innerHTML;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px; animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Processing...`;
+      $("v-new").style.transition = "opacity 0.15s ease";
+      $("v-new").style.opacity = "0";
+
+      setTimeout(() => {
+        cur = { raw, ...a };
+        $("outRaw").textContent = raw;
+        const outPhoto = $("outPhoto");
+        if (outPhoto) {
+          if (!$("photoBox").hidden && $("prev").src) {
+            outPhoto.src = $("prev").src;
+            outPhoto.hidden = false;
+          } else {
+            outPhoto.hidden = true;
+            outPhoto.src = "";
+          }
+        }
+        $("outClean").innerHTML = highlight(a.clean, a.terms);
+        renderReviewChips();
+
+        // Autocorrection visual feedback banner
+        const autoNotice = $("autocorrect-notice");
+        const autoBadge = $("clean-auto-badge");
+        if (a.corrections && a.corrections.length > 0) {
+          if (autoBadge) autoBadge.style.display = "inline-block";
+          if (autoNotice) {
+            autoNotice.hidden = false;
+            autoNotice.innerHTML = `
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <div>
+                <span style="font-weight:700;">Autocorrected ${a.corrections.length} error${a.corrections.length === 1 ? '' : 's'}:</span>
+                ${a.corrections.map(c => `<span style="display:inline-block; margin-right:8px; margin-top:2px; padding:1px 6px; border-radius:4px; background:rgba(34,197,94,0.18);"><s>${esc(c.original)}</s> → <b>${esc(c.corrected)}</b></span>`).join("")}
+              </div>`;
+          }
+        } else {
+          if (autoBadge) autoBadge.style.display = "none";
+          if (autoNotice) autoNotice.hidden = true;
+        }
+
+        let genTitle = "Untitled note";
+        if (a.terms.length > 0) {
+          const topT = a.terms.slice(0, 3).map(t => t.charAt(0).toUpperCase() + t.slice(1));
+          if (topT.length === 1) genTitle = topT[0];
+          else if (topT.length === 2) genTitle = topT.join(" & ");
+          else genTitle = topT.slice(0, 2).join(", ") + " & " + topT[2];
+        }
+        $("title").value = genTitle;
+
+        $("v-new").style.opacity = "1";
+        btn.innerHTML = origBtn;
+        show("res");
+        $("v-res").style.animation = "fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards";
+      }, 120);
+    }
+    function getNoteSearchContent(note) {
+      if (note && note.searchContent) return note.searchContent;
+      const title = (note.title || '').toLowerCase();
+      const text = (note.text || '').toLowerCase();
+      let terms = '';
+      try {
+        const termsArr = Array.isArray(note.terms) ? note.terms : JSON.parse(note.terms || '[]');
+        terms = termsArr.map(t => String(t).toLowerCase()).join(' ');
+      } catch (e) {
+        terms = String(note.terms || '').toLowerCase();
+      }
+      const date = (note.date || '').toLowerCase();
+      return `${title} ${terms} ${text} ${date}`;
+    }
+
+    function renderArchive() {
+      const q = $("q").value.trim().toLowerCase();
+      const queryWords = q.split(/\s+/).filter(Boolean);
+      const isSearching = queryWords.length > 0;
+
+      const rows = archive
+        .map((e, i) => ({ ...e, idx: i }))
+        .filter(e => {
+          if (!isSearching) return true;
+          const searchContent = e.searchContent || getNoteSearchContent(e);
+          return queryWords.every(word => searchContent.includes(word));
+        });
+
+      $("list").innerHTML = rows.length ? rows.map((e, index) => {
+        let termsArr = e.parsedTerms;
+        if (!termsArr) {
+          try {
+            termsArr = Array.isArray(e.terms) ? e.terms : JSON.parse(e.terms || '[]');
+          } catch (err) {
+            termsArr = Array.isArray(e.terms) ? e.terms : [];
+          }
+        }
+        const maxChips = 3;
+        const chipsHtml = termsArr.slice(0, maxChips).map(t => `<button class="chip" data-t="${esc(t)}">${esc(t)}</button>`).join("") + (termsArr.length > maxChips ? `<span class="chip" style="background:transparent; border:1px dashed var(--line); color:var(--mute); pointer-events:none; padding:4px 8px;">+${termsArr.length - maxChips}</span>` : "");
+        const animDelayStyle = isSearching ? '' : `animation-delay: ${index * 0.03}s;`;
+        return `<article class="sheet entry" data-idx="${e.idx}" style="position:relative; ${animDelayStyle}">
+    <div style="position:absolute; top:20px; right:20px; display:flex; gap:4px; z-index:2;">
+      <button class="btn ghost arc-edit" data-idx="${e.idx}" style="padding:4px; width:auto; border-radius:4px;" title="Edit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--mute)"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      </button>
+      <button class="btn ghost arc-del" data-idx="${e.idx}" style="padding:4px; width:auto; border-radius:4px;" title="Delete">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#ff3b30"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      </button>
+    </div>
+    <h2 style="padding-right:64px;">${esc(e.title)}</h2><div class="meta">${esc(e.date)}</div><p style="margin:0 0 16px; color:var(--mute); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;">${esc(e.text)}</p><div class="chips">${chipsHtml}</div></article>`;
+      }).join("") : '<div class="empty">No entries match. Try a different term, or add a new note.</div>';
+    }
+    function openDetEditMode(preserveInputs = false) {
+      if (currentDetIdx === -1) return;
+      const e = archive[currentDetIdx];
+      if (!preserveInputs) {
+        $("det-input-title").value = e.title;
+        $("det-input-text").value = e.text;
+      }
+      $("det-view-actions").hidden = true;
+      $("det-view-card").hidden = true;
+      $("det-edit-card").hidden = false;
+      setTimeout(() => $("det-input-text").focus(), 50);
+    }
+
+    function closeDetEditMode() {
+      editingArchiveIdx = -1;
+      $("det-view-actions").hidden = false;
+      $("det-view-card").hidden = false;
+      $("det-edit-card").hidden = true;
+    }
+
+    function reviewDetEdit() {
+      if (currentDetIdx === -1) return;
+      const title = $("det-input-title").value.trim() || "Untitled note";
+      const text = $("det-input-text").value.trim();
+      if (!text) {
+        toast("Note content cannot be empty");
+        $("det-input-text").focus();
+        return;
+      }
+
+      editingArchiveIdx = currentDetIdx;
+      const existing = archive[currentDetIdx];
+      const a = analyze(text);
+      cur = { raw: text, ...a, date: existing.date };
+
+      $("title").value = title;
+      $("outRaw").textContent = text;
+      const outPhoto = $("outPhoto");
+      if (outPhoto) {
+        outPhoto.hidden = true;
+        outPhoto.src = "";
+      }
+      $("outClean").innerHTML = highlight(a.clean, a.terms);
+      renderReviewChips();
+
+      // Autocorrection visual feedback banner
+      const autoNotice = $("autocorrect-notice");
+      const autoBadge = $("clean-auto-badge");
+      if (a.corrections && a.corrections.length > 0) {
+        if (autoBadge) autoBadge.style.display = "inline-block";
+        if (autoNotice) {
+          autoNotice.hidden = false;
+          autoNotice.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <div>
+              <span style="font-weight:700;">Autocorrected ${a.corrections.length} error${a.corrections.length === 1 ? '' : 's'}:</span>
+              ${a.corrections.map(c => `<span style="display:inline-block; margin-right:8px; margin-top:2px; padding:1px 6px; border-radius:4px; background:rgba(34,197,94,0.18);"><s>${esc(c.original)}</s> → <b>${esc(c.corrected)}</b></span>`).join("")}
+            </div>`;
+        }
+      } else {
+        if (autoBadge) autoBadge.style.display = "none";
+        if (autoNotice) autoNotice.hidden = true;
+      }
+
+      show("res");
+      $("v-res").style.animation = "fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards";
+    }
+
+    window.viewDet = function (idx) {
+      currentDetIdx = idx;
+      const e = archive[idx];
+      let termsArr = e.parsedTerms;
+      if (!termsArr) {
+        try {
+          termsArr = Array.isArray(e.terms) ? e.terms : JSON.parse(e.terms || '[]');
+        } catch (err) {
+          termsArr = Array.isArray(e.terms) ? e.terms : [];
+        }
+      }
+      $("det-title").textContent = e.title;
+      $("det-date").textContent = e.date;
+      $("det-text").textContent = e.text;
+
+      if (!e._noteAnalysis || e._noteAnalysisText !== e.text) {
+        e._noteAnalysis = analyze(e.text || '');
+        e._noteAnalysisText = e.text;
+      }
+      const noteTags = e._noteAnalysis.tags || {};
+
+      $("det-terms").innerHTML = termsArr.map(t => {
+        const tag = noteTags[t] || noteTags[t.toLowerCase()] || getContextualTagForTerm(t, e.text);
+        return `
+<div class="chip-wrap">
+  <div style="display:flex; align-items:center;">
+    <button class="chip-btn" onclick="toggleDef(this, '${esc(t)}', '${esc(tag)}')" title="Click to view WordNet & Corpus definition (${esc(getPosDescription(tag))})">${esc(t)} ${renderPosBadge(tag)}</button>
+  </div>
+  <div class="term-dict"><div class="term-dict-inner"></div></div>
+</div>`;
+      }).join("");
+      closeDetEditMode();
+      show("det");
+    };
+
+    $("det-back").onclick = () => {
+      closeDetEditMode();
+      show("arc");
+    };
+    $("det-edit").onclick = openDetEditMode;
+    $("det-edit-cancel").onclick = closeDetEditMode;
+    $("det-edit-review").onclick = reviewDetEdit;
+
+    $("det-del").onclick = () => {
+      if (currentDetIdx === -1) return;
+      $("modal-del").hidden = false;
+    };
+
+    $("btn-cancel-del").onclick = () => $("modal-del").hidden = true;
+    $("btn-confirm-del").onclick = async () => {
+      if (currentDetIdx !== -1) {
+        const toDelete = archive[currentDetIdx];
+        const targetId = toDelete ? toDelete.id : null;
+        if (targetId) {
+          const idx = archive.findIndex(item => item.id === targetId);
+          if (idx !== -1) archive.splice(idx, 1);
+        } else {
+          archive.splice(currentDetIdx, 1);
+        }
+        saveArchive();
+        currentDetIdx = -1;
+        renderArchive();
+        $("modal-del").hidden = true;
+        show("arc");
+        toast("Entry deleted");
+        if (targetId) {
+          await apiFetch(`/api/notes/${targetId}`, { method: 'DELETE' });
+        }
+      }
+    };
+
+    function resetNewEntryForm() {
+      editingArchiveIdx = -1;
+      cur = null;
+      currentLensData = null;
+      $("raw").value = "";
+      $("raw").dispatchEvent(new Event('input'));
+
+      const pb = $("photoBox"), on = $("ocrNote"), op = $("outPhoto");
+      if (!pb.hidden) {
+        pb.hidden = true;
+        pb.style.opacity = "1";
+        $("prev").src = "";
+        $("dropMsg").textContent = "";
+      }
+      if (!on.hidden) {
+        on.hidden = true;
+        on.style.opacity = "1";
+      }
+      if (op) {
+        op.hidden = true;
+        op.src = "";
+      }
+      const lensCont = $("lens-box-container");
+      if (lensCont) {
+        lensCont.hidden = true;
+        if ($("lens-box-layer")) $("lens-box-layer").innerHTML = "";
+        if ($("lens-photo")) $("lens-photo").src = "";
+        if ($("lens-laser-beam")) $("lens-laser-beam").style.display = "none";
+      }
+      if ($("add-term-input")) $("add-term-input").value = "";
+    }
+
+    let pendingNav = null;
+    function attemptNav(targetFn) {
+      if (!$("v-res").hidden) {
+        pendingNav = targetFn;
+        $("modal-unsaved").hidden = false;
+      } else {
+        targetFn();
+      }
+    }
+    $("btn-cancel-nav").onclick = () => $("modal-unsaved").hidden = true;
+    $("btn-confirm-nav").onclick = () => {
+      $("modal-unsaved").hidden = true;
+      $("v-res").hidden = true;
+      resetNewEntryForm();
+      if (pendingNav) pendingNav();
+    };
+
+    $("discard-res").onclick = () => {
+      const wasEditing = editingArchiveIdx !== -1;
+      pendingNav = () => {
+        if (wasEditing) {
+          renderArchive();
+          show("arc");
+        } else {
+          show("new");
+        }
+      };
+      $("modal-unsaved").hidden = false;
+    };
+
+    $("modal-unsaved").onclick = e => { if (e.target === $("modal-unsaved")) $("modal-unsaved").hidden = true; };
+    $("modal-clear").onclick = e => { if (e.target === $("modal-clear")) $("modal-clear").hidden = true; };
+    $("modal-del").onclick = e => { if (e.target === $("modal-del")) $("modal-del").hidden = true; };
+
+    $("t-new").onclick = () => attemptNav(() => show("new"));
+    $("t-arc").onclick = () => attemptNav(() => { renderArchive(); show("arc"); fetchArchiveFromDB(false); });
+    $("t-set").onclick = () => attemptNav(() => show("set"));
+    $("arc-refresh").onclick = () => fetchArchiveFromDB(true);
+
+    function animSet() {
+      const el = document.documentElement;
+      el.classList.add("theme-transitioning");
+      clearTimeout(el.ttTimer);
+      el.ttTimer = setTimeout(() => el.classList.remove("theme-transitioning"), 400);
+    }
+
+    function setTheme(t) {
+      animSet();
+      ["auto", "light", "dark"].forEach(x => $("thm-" + x).setAttribute("aria-selected", x === t));
+      if (t === "auto") document.documentElement.removeAttribute("data-theme");
+      else document.documentElement.setAttribute("data-theme", t);
+    }
+    $("thm-auto").onclick = () => setTheme("auto");
+    $("thm-light").onclick = () => setTheme("light");
+    $("thm-dark").onclick = () => setTheme("dark");
+
+    $("t-contrast").onchange = (e) => {
+      animSet();
+      if (e.target.checked) document.documentElement.setAttribute("data-contrast", "high");
+      else document.documentElement.removeAttribute("data-contrast");
+    };
+    $("t-text").onchange = (e) => {
+      animSet();
+      if (e.target.checked) document.documentElement.setAttribute("data-text", "large");
+      else document.documentElement.removeAttribute("data-text");
+    };
+
+    $("btn-cancel-clear").onclick = () => $("modal-clear").hidden = true;
+    $("btn-confirm-clear").onclick = async () => {
+      archive = [];
+      saveArchive();
+      renderArchive();
+      $("modal-clear").hidden = true;
+      toast("Archive cleared");
+      await apiFetch('/api/notes', { method: 'DELETE' });
+    };
+
+    $("btn-start").onclick = () => {
+      const l = $("v-landing");
+      l.style.opacity = "0";
+      l.style.transform = "scale(0.98)";
+
+      show("new");
+
+      const w = document.querySelector(".wrap");
+      w.classList.remove("animate-entrance");
+      void w.offsetWidth;
+      w.classList.add("animate-entrance");
+      setTimeout(() => w.classList.remove("animate-entrance"), 850);
+
+      setTimeout(() => l.hidden = true, 600);
+    };
+
+    $("btn-show-landing").onclick = () => {
+      // Clear out inputs in the main app to reset state
+      $("clr").click();
+      $("q").value = "";
+      renderArchive();
+
+      const l = $("v-landing");
+      l.hidden = false;
+      // Small delay to allow display to apply before triggering transition
+      setTimeout(() => {
+        l.style.opacity = "1";
+        l.style.transform = "scale(1)";
+      }, 10);
+    };
+
+    let currentLensData = null;
+
+    // Clean unwanted characters, paper speckles, border lines, and OCR symbol noise
+    function cleanOcrText(text) {
+      if (!text) return '';
+      let s = text;
+      // 1. Remove non-printable / control / non-standard noise characters
+      s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+      // Remove typical OCR clutter symbols that never belong in study notes
+      s = s.replace(/[§©®™°±¢€¥«»¿¡¶•~^\\\/|`¤¥§¨©ª«®¯°±²³´µ¶·¸¹º»¼½¾¿×÷]/g, ' ');
+
+      // 2. Fix hyphenated line breaks (e.g. 'photo-\nsynthesis' -> 'photosynthesis')
+      s = s.replace(/([A-Za-z]+)-\s*\r?\n\s*([A-Za-z]+)/g, '$1$2');
+
+      // 3. Normalize quotes and apostrophes
+      s = s.replace(/[\u2018\u2019\u201A\u201B]/g, "'");
+      s = s.replace(/[\u201C\u201D\u201E\u201F]/g, '"');
+
+      // 4. Process line by line to remove border lines and symbol clusters
+      const lines = s.split(/\r?\n/).map(line => {
+        let l = line.trim();
+        // Remove stray horizontal divider / border lines composed purely of symbols
+        if (/^[-_=+*~#|:;., '"]+$/.test(l)) return '';
+
+        // Split into tokens to filter noise words
+        const tokens = l.split(/\s+/).map(t => {
+          let cleanT = t.replace(/^[^A-Za-z0-9"'(]+|[^A-Za-z0-9"'!?,.:;)]+$/g, '');
+          if (!/[A-Za-z0-9]/.test(cleanT)) return '';
+          if (cleanT.length === 1 && !/^[aAiI0-9]$/.test(cleanT)) return '';
+
+          // Clean common OCR letter/digit confusions
+          cleanT = cleanT.replace(/\b0([a-z]{2,})/gi, 'O$1')
+                         .replace(/([A-Za-z]+)0([A-Za-z]+)/g, '$1o$2')
+                         .replace(/\bsunllght\b/gi, 'sunlight')
+                         .replace(/\b1([a-z]{2,})/g, 'l$1')
+                         .replace(/([A-Za-z]+)11\b/g, '$1ll')
+                         .replace(/([A-Za-z]+)11([A-Za-z]+)/g, '$1ll$2')
+                         .replace(/([A-Za-z]+)1([A-Za-z]+)/g, '$1l$2')
+                         .replace(/([a-z]+)5([a-z]+)/gi, '$1s$2');
+
+          const alphaCount = (cleanT.match(/[A-Za-z]/g) || []).length;
+          const nonAlphaCount = cleanT.length - alphaCount;
+          if (cleanT.length > 3 && nonAlphaCount > alphaCount && !/\d+([.,]\d+)?%?/.test(cleanT)) {
+            return '';
+          }
+          return cleanT;
+        }).filter(Boolean);
+
+        return tokens.join(' ');
+      }).filter(line => line.length > 0);
+
+      let result = lines.join('\n');
+      result = result.replace(/\s+([,.:;?!])/g, '$1');
+      result = result.replace(/\.{4,}/g, '...');
+      result = result.replace(/([,;:?!])\1+/g, '$1');
+      result = result.replace(/[ \t]{2,}/g, ' ');
+      result = result.replace(/\n{3,}/g, '\n\n');
+      return result.trim();
+    }
+
+    // Scale down and enhance contrast of camera photos on canvas
+    // Removes background paper grain, yellow/gray shadow casts, and boosts ink strokes
+    function prepareImageForOcr(dataUrl, maxDim = 1600) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          if (!w || !h) return resolve(dataUrl);
+
+          let scale = 1;
+          if (w > maxDim || h > maxDim) {
+            scale = Math.min(maxDim / w, maxDim / h);
+          }
+          const sw = Math.round(w * scale);
+          const sh = Math.round(h * scale);
+
+          const canvas = document.createElement('canvas');
+          canvas.width = sw;
+          canvas.height = sh;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, sw, sh);
+
+          // Contrast stretch & background clearing for cleaner OCR (optimized sampling & integer math)
+          try {
+            const imgData = ctx.getImageData(0, 0, sw, sh);
+            const d = imgData.data;
+            const len = d.length;
+
+            // Fast statistical sample to compute average luminance (1 in every 16 pixels)
+            let sampleSum = 0;
+            let sampleCount = 0;
+            for (let i = 0; i < len; i += 64) {
+              sampleSum += (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+              sampleCount++;
+            }
+            const avgLum = sampleCount ? (sampleSum / sampleCount) : 128;
+            const darkThreshold = avgLum * 0.82;
+            const lightThreshold = avgLum * 1.05;
+
+            for (let i = 0; i < len; i += 4) {
+              const lum = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+              let val;
+              // If pixel is darker than background (text stroke), darken it
+              if (lum < darkThreshold) {
+                val = (lum * 3) >> 2;
+              } else if (lum > lightThreshold) {
+                // Brighten paper background to clear yellow/gray artifacts
+                val = Math.min(255, ((lum * 294) >> 8) + 15);
+              } else {
+                val = lum;
+              }
+              d[i] = val;
+              d[i + 1] = val;
+              d[i + 2] = val;
+            }
+            ctx.putImageData(imgData, 0, 0);
+          } catch (e) {}
+
+          try {
+            const optimized = canvas.toDataURL('image/jpeg', 0.92);
+            resolve(optimized);
+          } catch (e) {
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    async function handleLensImage(f) {
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = async () => {
+        const photoData = rd.result;
+
+        // Show Lens Scanner View
+        const container = $("lens-box-container");
+        container.hidden = false;
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // Display photo in the scanner stage
+        const lensPhoto = $("lens-photo");
+        lensPhoto.src = photoData;
+
+        // Maintain photoBox state for downstream Review Entry screen
+        $("photoBox").hidden = false;
+        $("prev").src = photoData;
+        $("dropMsg").textContent = f.name || "scanned_note.jpg";
+
+        // Start laser scanning beam & reset highlights
+        const laser = $("lens-laser-beam");
+        laser.style.display = "block";
+        const boxLayer = $("lens-box-layer");
+        boxLayer.innerHTML = "";
+
+        const badge = $("lens-badge");
+        badge.textContent = "Scanning with Lens...";
+        badge.style.background = "rgba(66, 133, 244, 0.18)";
+        badge.style.color = "#4285f4";
+
+        $("lens-count").textContent = "Analyzing image...";
+        $("lens-hint").innerHTML = "✨ Scanning handwriting & text with OCR engine...";
+
+        $("ocrNote").hidden = false;
+        $("ocrNote").innerHTML = `<span style="display:inline-flex; align-items:center; gap:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+            <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+          </svg>
+          Google Lens active: Reading handwritten & printed text...
+        </span>`;
+
+        try {
+          // Normalize, contrast-enhance, and scale camera image for rapid OCR
+          const optimizedPayload = await prepareImageForOcr(photoData, 1600);
+
+          // 1. Call Express backend OCR API (powered by local Tesseract worker)
+          let ocrResult = await apiFetch('/api/ocr', {
+            method: 'POST',
+            body: JSON.stringify({ image: optimizedPayload })
+          });
+
+          // 2. Client-side fallback if backend was unavailable
+          if ((!ocrResult || !ocrResult.text) && typeof Tesseract !== 'undefined') {
+            const clientRes = await Tesseract.recognize(optimizedPayload, 'eng', {
+              logger: m => {
+                if (m.status === 'recognizing text') {
+                  const pct = Math.round((m.progress || 0) * 100);
+                  badge.textContent = `Reading: ${pct}%`;
+                }
+              }
+            });
+            if (clientRes && clientRes.data) {
+              const cleanedClientText = cleanOcrText(clientRes.data.text || '');
+              const lowConf = (clientRes.data.words || [])
+                .filter(w => w.confidence < 70 && w.text && w.text.trim().length > 2 && /^[A-Za-z]+$/.test(w.text.trim()))
+                .map(w => w.text.trim().toLowerCase());
+              const words = (clientRes.data.words || [])
+                .filter(w => {
+                  const wt = (w.text || '').trim().replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '');
+                  return wt.length > 0 && /[A-Za-z0-9]/.test(wt) && (wt.length > 1 || /^[aAiI0-9]$/.test(wt)) && (w.confidence >= 35);
+                })
+                .map(w => ({
+                  text: w.text.trim().replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, ''),
+                  confidence: Math.round(w.confidence || 0),
+                  bbox: w.bbox
+                }));
+              ocrResult = {
+                text: cleanedClientText,
+                confidence: Math.round(clientRes.data.confidence || 0),
+                lowConfidenceWords: [...new Set(lowConf)].slice(0, 5),
+                words
+              };
+            }
+          }
+
+          // Complete scanning animation
+          laser.style.display = "none";
+
+          if (ocrResult && ocrResult.text && ocrResult.text.trim()) {
+            currentLensData = ocrResult;
+            const words = ocrResult.words || [];
+
+            // Draw Lens bounding boxes over detected words using DocumentFragment for 60fps rendering
+            const drawBoxes = () => {
+              const nw = lensPhoto.naturalWidth;
+              const nh = lensPhoto.naturalHeight;
+              boxLayer.innerHTML = "";
+
+              if (nw > 0 && nh > 0 && words.length > 0) {
+                const fragment = document.createDocumentFragment();
+                words.forEach(w => {
+                  if (!w.bbox) return;
+                  const left = (w.bbox.x0 / nw) * 100;
+                  const top = (w.bbox.y0 / nh) * 100;
+                  const width = ((w.bbox.x1 - w.bbox.x0) / nw) * 100;
+                  const height = ((w.bbox.y1 - w.bbox.y0) / nh) * 100;
+
+                  const box = document.createElement("div");
+                  box.className = `lens-box ${w.confidence < 70 ? 'low-conf' : ''}`;
+                  box.style.left = `${left}%`;
+                  box.style.top = `${top}%`;
+                  box.style.width = `${Math.max(width, 1.2)}%`;
+                  box.style.height = `${Math.max(height, 1.2)}%`;
+                  box.title = `"${w.text}" (${w.confidence}% conf)\nClick to copy`;
+
+                  box.onclick = (ev) => {
+                    ev.stopPropagation();
+                    navigator.clipboard.writeText(w.text).catch(() => {});
+                    box.classList.add("copied");
+                    setTimeout(() => box.classList.remove("copied"), 700);
+                    toast(`Copied "${w.text}"`);
+                  };
+
+                  fragment.appendChild(box);
+                });
+                boxLayer.appendChild(fragment);
+              }
+            };
+
+            if (lensPhoto.complete && lensPhoto.naturalWidth > 0) {
+              drawBoxes();
+            } else {
+              lensPhoto.onload = drawBoxes;
+            }
+
+            // Immediately put extracted text into note entry so it can be processed directly
+            $("raw").value = ocrResult.text.trim();
+            $("raw").dispatchEvent(new Event('input'));
+
+            badge.textContent = `${ocrResult.confidence || 85}% confidence`;
+            badge.style.background = "rgba(34, 197, 94, 0.15)";
+            badge.style.color = "#16a34a";
+            $("lens-count").textContent = `${words.length} words highlighted`;
+            $("lens-hint").innerHTML = `✨ <b>${words.length} words highlighted.</b> Click any word to copy, or click <b>'Process Note Now'</b> to run NLP immediately.`;
+
+            if (ocrResult.lowConfidenceWords && ocrResult.lowConfidenceWords.length) {
+              $("ocrNote").textContent = `Low-confidence words flagged: "${ocrResult.lowConfidenceWords.join('", "')}". Check and fix them in the note below if needed.`;
+            } else {
+              $("ocrNote").textContent = `Text extracted and highlighted with ${ocrResult.confidence || 85}% confidence. Ready for processing.`;
+            }
+            toast(`Extracted ${words.length} words from picture`);
+          } else {
+            currentLensData = null;
+            badge.textContent = "No text found";
+            badge.style.background = "rgba(239, 68, 68, 0.15)";
+            badge.style.color = "#dc2626";
+            $("lens-count").textContent = "0 words detected";
+            $("lens-hint").innerHTML = "⚠️ No readable text was detected. Try closer distance, better lighting, or type directly.";
+            $("ocrNote").textContent = "No readable text detected in this picture. Please check handwriting or lighting, or type directly.";
+            toast("No readable text detected");
+          }
+        } catch (err) {
+          console.error("OCR execution error:", err);
+          laser.style.display = "none";
+          badge.textContent = "Error";
+          badge.style.background = "rgba(239, 68, 68, 0.15)";
+          badge.style.color = "#dc2626";
+          $("lens-count").textContent = "Scan error";
+          $("ocrNote").textContent = "Could not parse text from this image. Please type or paste your notes directly below.";
+          toast("OCR scan failed");
+        }
+      };
+      rd.readAsDataURL(f);
+    }
+
+    $("file").onchange = e => {
+      handleLensImage(e.target.files[0]);
+    };
+
+    $("camera-file").onchange = e => {
+      handleLensImage(e.target.files[0]);
+    };
+
+    $("btn-lens-use").onclick = () => {
+      if (currentLensData && currentLensData.text) {
+        $("raw").value = currentLensData.text;
+        $("raw").dispatchEvent(new Event('input'));
+        $("raw").focus();
+        $("raw").scrollIntoView({ behavior: 'smooth', block: 'center' });
+        toast("Inserted into note entry");
+      } else {
+        toast("No text available to insert");
+      }
+    };
+
+    $("btn-lens-copy").onclick = () => {
+      const textToCopy = (currentLensData && currentLensData.text) ? currentLensData.text : $("raw").value;
+      if (textToCopy && textToCopy.trim()) {
+        navigator.clipboard.writeText(textToCopy.trim()).then(() => {
+          toast("Copied all extracted text to clipboard");
+        }).catch(() => {
+          toast("Could not access clipboard");
+        });
+      } else {
+        toast("No text to copy");
+      }
+    };
+
+    $("btn-lens-process").onclick = () => {
+      const textToProcess = (currentLensData && currentLensData.text) ? currentLensData.text : $("raw").value;
+      if (textToProcess && textToProcess.trim()) {
+        $("raw").value = textToProcess.trim();
+        $("raw").dispatchEvent(new Event('input'));
+        // Trigger note processing pipeline immediately
+        $("go").click();
+      } else {
+        toast("Please picture or type notes before processing");
+      }
+    };
+
+    $("btn-lens-dismiss").onclick = () => {
+      $("lens-box-container").hidden = true;
+    };
+
+    $("btn-add-term").onclick = addReviewTerm;
+    $("add-term-input").onkeydown = e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addReviewTerm();
+      }
+    };
+    $("go").onclick = process;
+    $("clr").onclick = () => {
+      resetNewEntryForm();
+      $("raw").focus();
+    };
+    $("back").onclick = () => {
+      if (editingArchiveIdx !== -1) {
+        if ($("title").value.trim()) {
+          $("det-input-title").value = $("title").value.trim();
+        }
+        show("det");
+        openDetEditMode(true);
+      } else {
+        show("new");
+      }
+    };
+    $("commit").onclick = async () => {
+      const title = $("title").value.trim() || "Untitled note";
+      const newEntry = {
+        title,
+        date: cur.date || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        terms: cur.terms,
+        text: cur.clean,
+        searchStr: (title + " " + cur.terms.join(" ") + " " + cur.clean).toLowerCase()
+      };
+
+      if (editingArchiveIdx !== -1) {
+        // UPDATE (U in CRUD)
+        const existing = archive[editingArchiveIdx];
+        const targetId = existing ? existing.id : null;
+        editingArchiveIdx = -1;
+
+        if (targetId) {
+          const idx = archive.findIndex(item => item.id === targetId);
+          if (idx !== -1) {
+            archive[idx] = { ...archive[idx], ...newEntry };
+            saveArchive();
+            renderArchive();
+          }
+          toast("Entry updated");
+          const updated = await apiFetch(`/api/notes/${targetId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ title, text: newEntry.text, date: newEntry.date, terms: newEntry.terms })
+          });
+          if (updated && updated.id) {
+            const freshIdx = archive.findIndex(item => item.id === targetId);
+            if (freshIdx !== -1) {
+              archive[freshIdx] = updated;
+              saveArchive();
+              renderArchive();
+            }
+          }
+        } else {
+          archive[editingArchiveIdx] = { ...existing, ...newEntry };
+          saveArchive();
+          renderArchive();
+          toast("Entry updated");
+        }
+      } else {
+        // CREATE (C in CRUD)
+        const tempId = 'temp_' + Date.now();
+        const pendingNote = { ...newEntry, tempId };
+        archive.unshift(pendingNote);
+        saveArchive();
+        renderArchive();
+        toast("Committed to archive");
+
+        const created = await apiFetch('/api/notes', {
+          method: 'POST',
+          body: JSON.stringify({ title, text: newEntry.text, date: newEntry.date, terms: newEntry.terms })
+        });
+        if (created && created.id) {
+          const matchIdx = archive.findIndex(item => item.tempId === tempId);
+          if (matchIdx !== -1) {
+            archive[matchIdx] = created;
+          } else {
+            archive.unshift(created);
+          }
+          saveArchive();
+          renderArchive();
+        }
+      }
+      resetNewEntryForm();
+      $("q").value = "";
+      renderArchive();
+      show("arc");
+    };
+    let debounceTimer;
+    $("q").addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderArchive, 30);
+    });
+    $("q").addEventListener("search", renderArchive);
+    $("q").addEventListener("keyup", (e) => {
+      if (e.key === "Escape") {
+        $("q").value = "";
+        renderArchive();
+      }
+    });
+    $("list").onclick = e => {
+      const editBtn = e.target.closest(".arc-edit");
+      if (editBtn) {
+        e.stopPropagation();
+        currentDetIdx = Number(editBtn.dataset.idx);
+        viewDet(currentDetIdx);
+        openDetEditMode();
+        return;
+      }
+      const delBtn = e.target.closest(".arc-del");
+      if (delBtn) {
+        e.stopPropagation();
+        currentDetIdx = Number(delBtn.dataset.idx);
+        $("det-del").click();
+        return;
+      }
+      const b = e.target.closest("[data-t]");
+      if (b) {
+        e.stopPropagation();
+        $("q").value = b.dataset.t;
+        renderArchive();
+      } else {
+        const art = e.target.closest("article");
+        if (art) viewDet(Number(art.dataset.idx));
+      }
+    };
+    let touchStartX = 0;
+    let touchEndX = 0;
+    document.addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    document.addEventListener('touchend', e => {
+      touchEndX = e.changedTouches[0].screenX;
+      const swipeDist = touchEndX - touchStartX;
+      if (Math.abs(swipeDist) < 50) return;
+      const topNew = !$("v-new").hidden || !$("v-res").hidden;
+      const topArc = !$("v-arc").hidden || !$("v-det").hidden;
+      const topSet = !$("v-set").hidden;
+      if (!topNew && !topArc && !topSet) return;
+      if (swipeDist < 0) {
+        if (topNew) $("t-arc").click();
+        else if (topArc) $("t-set").click();
+      } else {
+        if (topSet) $("t-arc").click();
+        else if (topArc) $("t-new").click();
+      }
+    }, { passive: true });
+
+    let rawResizeRaf = null;
+    $("raw").addEventListener("input", function () {
+      if (rawResizeRaf) cancelAnimationFrame(rawResizeRaf);
+      rawResizeRaf = requestAnimationFrame(() => {
+        this.style.height = 'auto';
+        const target = Math.max(260, this.scrollHeight);
+        this.style.height = target + 'px';
+      });
+    });
+
+    renderArchive();
+    initArchiveBackend();
+  </script>
+</body>
+
+</html>
