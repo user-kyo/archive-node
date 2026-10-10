@@ -93,7 +93,7 @@ const KNOWN_WORDS = new Set([
   "photosynthesis", "respiration", "chlorophyll", "glucose", "sunlight", "oxygen",
   "carbon", "dioxide", "mitochondria", "membrane", "protein", "enzyme", "cell", "cells",
   "plant", "plants", "leaf", "leaves", "cycle", "calvin", "reaction", "reactions",
-  "absorb", "absorbs", "absorbed", "produce", "produces", "produced", "make", "makes",
+  "absorb", "absorbs", "absorbed", "produce", "produces", "produced", "product", "products", "production", "make", "makes",
   "important", "importance", "importantly", "different", "difference", "differ",
   "significant", "significance", "essential", "crucial", "primary", "secondary",
   "cellular", "chemical", "physical", "biological", "organic", "inorganic",

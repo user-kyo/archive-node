@@ -9,6 +9,7 @@
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23111827'/%3E%3Crect x='4' y='5' width='16' height='15' rx='2' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='16' y1='3' x2='16' y2='7' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='8' y1='3' x2='8' y2='7' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='4' y1='11' x2='20' y2='11' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <script src="dict.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -524,6 +525,13 @@
       width: 100% !important;
     }
 
+    .chip-wrap:not(.chip-wrap-active) .chip-min {
+      display: none;
+    }
+    .chip-wrap.chip-wrap-active .chip-min {
+      display: inline-flex;
+    }
+
     .synset-nav-btn {
       transition: all 0.2s ease;
     }
@@ -542,6 +550,8 @@
       grid-template-rows: 0fr;
       transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       background: var(--fill);
+      width: 0;
+      min-width: 100%;
     }
 
     .term-dict.open {
@@ -1813,8 +1823,11 @@
   <script>
     const $ = id => document.getElementById(id);
     const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const STOP = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very can could would should will just do does did have has had cannot please not hindi".split(" "));
-    const TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya daw raw po ba din rin lang naman nga pa kasi ito iyan iyon si ni kay hindi".split(" "));
+    const RAW_STOP = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very can could would should will just do does did have has had cannot please not no nor never without".split(" "));
+    const RAW_TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya daw raw po ba din rin lang naman nga pa kasi ito iyan iyon si ni kay hindi wala walang ayaw di".split(" "));
+    const NEGATIONS = new Set(["not", "no", "nor", "never", "cannot", "without", "hindi", "wala", "walang", "ayaw", "di"]);
+    const STOP = new Set([...RAW_STOP].filter(x => !NEGATIONS.has(x)));
+    const TL_STOP = new Set([...RAW_TL_STOP].filter(x => !NEGATIONS.has(x)));
     const ALL_STOP = new Set([...STOP, ...TL_STOP]);
     const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap gawin aralin kailangan tandaan basahin sulat sagot tanong".split(" "));
     const NONTERM = new Set("equals".split(" "));
@@ -1856,6 +1869,32 @@
       "who's": "who is"
     };
     const SHORTCUTS = {
+      // Apostrophe-less contractions
+      "im": "i am",
+      "cant": "cannot",
+      "wont": "will not",
+      "dont": "do not",
+      "didnt": "did not",
+      "doesnt": "does not",
+      "isnt": "is not",
+      "arent": "are not",
+      "wasnt": "was not",
+      "werent": "were not",
+      "havent": "have not",
+      "hasnt": "has not",
+      "hadnt": "had not",
+      "wouldnt": "would not",
+      "couldnt": "could not",
+      "shouldnt": "should not",
+      "thats": "that is",
+      "theres": "there is",
+      "whats": "what is",
+      "youre": "you are",
+      "theyre": "they are",
+      "weve": "we have",
+      "youve": "you have",
+      "theyve": "they have",
+      // Standard shortcuts
       "pls": "please",
       "plz": "please",
       "imp": "important",
@@ -1878,7 +1917,63 @@
       "approx": "approximately",
       "temp": "temperature",
       "dept": "department",
-      "prof": "professor"
+      "prof": "professor",
+      // Acronym expansions
+      "ocr": "optical character recognition",
+      "dna": "deoxyribonucleic acid",
+      "rna": "ribonucleic acid",
+      "atp": "adenosine triphosphate",
+      "cpu": "central processing unit",
+      "ram": "random access memory",
+      "rom": "read only memory",
+      "gui": "graphical user interface",
+      "api": "application programming interface",
+      "url": "uniform resource locator",
+      "http": "hypertext transfer protocol",
+      "pdf": "portable document format",
+      "ai": "artificial intelligence",
+      "ml": "machine learning",
+      "nlp": "natural language processing",
+      "os": "operating system",
+      "pc": "personal computer",
+      "html": "hypertext markup language",
+      "css": "cascading style sheets",
+      "asap": "as soon as possible",
+      "fbi": "federal bureau of investigation",
+      "cia": "central intelligence agency",
+      "nasa": "national aeronautics and space administration",
+      "usa": "united states of america",
+      "uk": "united kingdom",
+      "faq": "frequently asked questions",
+      "diy": "do it yourself",
+      "vip": "very important person",
+      "ceo": "chief executive officer",
+      "cfo": "chief financial officer",
+      "cto": "chief technology officer",
+      "hr": "human resources",
+      "pr": "public relations",
+      "aka": "also known as",
+      "fyi": "for your information",
+      "tba": "to be announced",
+      "tbd": "to be determined",
+      "dob": "date of birth",
+      "eta": "estimated time of arrival",
+      "rsvp": "please respond",
+      "phd": "doctor of philosophy",
+      "mba": "master of business administration",
+      "gpa": "grade point average",
+      "eu": "european union",
+      "gdp": "gross domestic product",
+      "cpi": "consumer price index",
+      "roi": "return on investment",
+      "seo": "search engine optimization",
+      "usb": "universal serial bus",
+      "gps": "global positioning system",
+      "sms": "short message service",
+      "awol": "absent without leave",
+      "pov": "point of view",
+      "imo": "in my opinion",
+      "tbh": "to be honest"
     };
     const CAT = {
       // Natural & Life Sciences (WordNet hypernym mappings)
@@ -3006,6 +3101,7 @@
       ...TL_WORDS,
       ...STOP,
       ...TL_STOP,
+      ...NEGATIONS,
       ...NONTERM,
       // Common Academic, Study, & Science vocabulary
       "biology", "chemistry", "physics", "science", "scientific", "concept", "concepts",
@@ -3013,8 +3109,8 @@
       "chapter", "lesson", "definition", "definitions", "example", "examples", "problem", "solution",
       "question", "questions", "answer", "answers", "method", "methods", "theory", "theories",
       "analysis", "student", "students", "teacher", "teachers", "school", "study", "studying", "notes",
-      "review", "produce", "produces", "produced", "absorb", "absorbs", "absorbed",
-      "release", "releases", "released", "synthesize", "synthesizes", "convert", "converts",
+      "review", "produce", "produces", "produced", "product", "products", "production", "absorb", "absorbs", "absorbed",
+      "release", "releases", "released", "synthesize", "synthesizes", "convert", "converts", "primary", "secondary",
       "transform", "transforms", "increase", "decrease", "important", "importance", "importantly",
       "different", "difference", "differ", "significant", "significance", "essential", "crucial",
       "cellular", "organism", "organisms", "molecule", "molecules", "compound", "compounds",
@@ -3038,10 +3134,12 @@
       "need", "want", "mean", "seem", "part", "time", "year", "day", "way", "thing",
       "man", "world", "life", "hand", "eye", "place", "case", "point", "group", "fact",
       "form", "word", "line", "page", "text", "note", "read", "write", "book", "food",
-      "cool", "really", "free", "tree", "deep"
+      "cool", "really", "free", "tree", "deep", "current", "thinking"
     ]);
 
     const COMMON_TYPOS = {
+      "curent": "current",
+      "thikning": "thinking",
       "photosynthesys": "photosynthesis",
       "photosyntesis": "photosynthesis",
       "fotosintesis": "photosynthesis",
@@ -3160,6 +3258,7 @@
     }
 
     function isKnownWord(w) {
+      if (typeof FULL_ENGLISH_DICT !== 'undefined' && FULL_ENGLISH_DICT.has(w)) return true;
       if (KNOWN_WORDS.has(w)) return true;
       if (w.endsWith("s") && KNOWN_WORDS.has(w.slice(0, -1))) return true;
       if (w.endsWith("es") && KNOWN_WORDS.has(w.slice(0, -2))) return true;
@@ -3179,30 +3278,65 @@
       return replacement.toLowerCase();
     }
 
-    // Collapse stretched words with 3+ repeated characters (e.g. soooo -> so, pleeease -> please, cooool -> cool)
+    // Collapse stretched words with 2+ repeated characters (e.g. soooo -> so, pllleeaasseee -> please, cooool -> cool)
     function collapseStretched(word) {
-      if (!/([A-Za-z])\1{2,}/.test(word)) return word;
+      if (!/([A-Za-z])\1/.test(word)) return word; // Fast exit if no repeated letters
       const lower = word.toLowerCase();
+      if (isKnownWord(lower)) return word; // Already valid (e.g., "good")
 
-      // Candidate 1: Collapse 3+ repeats to 1 character (soooo -> so, pleeease -> please)
-      const cand1 = lower.replace(/([a-z])\1{2,}/g, "$1");
-      // Candidate 2: Collapse 3+ repeats to 2 characters (cooool -> cool, goooood -> good)
-      const cand2 = lower.replace(/([a-z])\1{2,}/g, "$1$1");
+      const groups = [];
+      const regex = /([a-z])\1+/g;
+      let match;
+      let lastIndex = 0;
+      const parts = [];
 
-      let best = null;
-      if (isKnownWord(cand1)) {
-        best = cand1;
-      } else if (isKnownWord(cand2)) {
-        best = cand2;
-      } else if (COMMON_TYPOS[cand1]) {
-        best = COMMON_TYPOS[cand1];
-      } else if (COMMON_TYPOS[cand2]) {
-        best = COMMON_TYPOS[cand2];
-      } else {
-        best = cand1;
+      while ((match = regex.exec(lower)) !== null) {
+        parts.push(lower.slice(lastIndex, match.index));
+        groups.push(match[1]);
+        lastIndex = regex.lastIndex;
+      }
+      parts.push(lower.slice(lastIndex));
+
+      if (groups.length === 0) return word;
+
+      const numCombos = 1 << groups.length;
+      const combos = [];
+      for (let i = 0; i < numCombos; i++) {
+        let cand = parts[0];
+        let doubleCount = 0;
+        for (let j = 0; j < groups.length; j++) {
+          const char = groups[j];
+          const isDouble = (i & (1 << j)) !== 0;
+          if (isDouble) doubleCount++;
+          cand += isDouble ? char + char : char;
+          cand += parts[j + 1];
+        }
+        combos.push({ cand, doubleCount });
       }
 
-      return applyCasing(word, best);
+      // Sort by doubleCount to prefer collapsing to single letters first (pleease -> please)
+      combos.sort((a, b) => a.doubleCount - b.doubleCount);
+
+      // 1. Check academic KNOWN_WORDS first
+      for (const { cand } of combos) {
+        if (KNOWN_WORDS.has(cand)) return applyCasing(word, cand);
+      }
+
+      // 2. Check full dictionary
+      const hasFullDict = typeof FULL_ENGLISH_DICT !== 'undefined';
+      if (hasFullDict) {
+        for (const { cand } of combos) {
+          if (FULL_ENGLISH_DICT.has(cand)) return applyCasing(word, cand);
+        }
+      }
+
+      // 3. Fallback: just compress 3+ repeats to 1 if it wasn't a valid word, to prevent extremely long stretches
+      if (/([A-Za-z])\1{2,}/.test(word)) {
+        const fallback = lower.replace(/([a-z])\1{2,}/g, "$1");
+        return applyCasing(word, fallback);
+      }
+
+      return word;
     }
 
     function autocorrectWord(word) {
@@ -3218,31 +3352,57 @@
         return { word: fixed, original: word, corrected: true, replacement: COMMON_TYPOS[lower] };
       }
 
+      const hasFullDict = typeof FULL_ENGLISH_DICT !== 'undefined';
+      
       // Strict single-edit distance against known vocabulary (length >= 5 only to protect short words)
       if (lower.length >= 5) {
         let bestMatch = null;
-        let minDistance = 99;
-        for (const known of KNOWN_WORDS) {
-          if (Math.abs(known.length - lower.length) > 1) continue;
-          if (known[0] !== lower[0]) continue; // First letter must match
 
-          // Suffix collision guard: Never swap -ance/-ence with -ant/-ent (e.g. importance vs important)
-          const wEndsAnce = /(ance|ence)$/.test(lower);
-          const kEndsAnt = /(ant|ent)$/.test(known);
-          if (wEndsAnce && kEndsAnt) continue;
-          const wEndsAnt = /(ant|ent)$/.test(lower);
-          const kEndsAnce = /(ance|ence)$/.test(known);
-          if (wEndsAnt && kEndsAnce) continue;
+        if (hasFullDict) {
+          const edits = [];
+          const alphabet = "abcdefghijklmnopqrstuvwxyz";
+          const n = lower.length;
+          // deletions
+          for (let i = 0; i < n; i++) edits.push(lower.slice(0, i) + lower.slice(i + 1));
+          // transpositions
+          for (let i = 0; i < n - 1; i++) edits.push(lower.slice(0, i) + lower[i + 1] + lower[i] + lower.slice(i + 2));
+          // substitutions
+          for (let i = 0; i < n; i++) {
+            for (const c of alphabet) edits.push(lower.slice(0, i) + c + lower.slice(i + 1));
+          }
+          // insertions
+          for (let i = 0; i <= n; i++) {
+            for (const c of alphabet) edits.push(lower.slice(0, i) + c + lower.slice(i));
+          }
 
-          const d = editDistance(lower, known);
-          if (d === 1 && d < minDistance) {
-            minDistance = d;
-            bestMatch = known;
+          const valid = edits.filter(c => c[0] === lower[0] && (KNOWN_WORDS.has(c) || FULL_ENGLISH_DICT.has(c)));
+          if (valid.length > 0) {
+            bestMatch = valid.find(c => KNOWN_WORDS.has(c)) || valid[0];
+          }
+        } else {
+          let minDistance = 99;
+          for (const known of KNOWN_WORDS) {
+            if (Math.abs(known.length - lower.length) > 1) continue;
+            if (known[0] !== lower[0]) continue; // First letter must match
+            const d = editDistance(lower, known);
+            if (d === 1 && d < minDistance) {
+              minDistance = d;
+              bestMatch = known;
+            }
           }
         }
+
         if (bestMatch) {
-          const fixed = applyCasing(word, bestMatch);
-          return { word: fixed, original: word, corrected: true, replacement: bestMatch };
+          // Suffix collision guard: Never swap -ance/-ence with -ant/-ent (e.g. importance vs important)
+          const wEndsAnce = /(ance|ence)$/.test(lower);
+          const kEndsAnt = /(ant|ent)$/.test(bestMatch);
+          const wEndsAnt = /(ant|ent)$/.test(lower);
+          const kEndsAnce = /(ance|ence)$/.test(bestMatch);
+          
+          if (!(wEndsAnce && kEndsAnt) && !(wEndsAnt && kEndsAnce)) {
+            const fixed = applyCasing(word, bestMatch);
+            return { word: fixed, original: word, corrected: true, replacement: bestMatch };
+          }
         }
       }
 
@@ -3298,7 +3458,7 @@
 
       // 3. Stretched words collapsing (e.g. soooo -> so, pleeease -> please, cooool -> cool, sooobrang -> sobrang)
       s = s.replace(/\b([A-Za-z]+)\b/g, (match) => {
-        if (/([A-Za-z])\1{2,}/.test(match)) {
+        if (/([A-Za-z])\1/.test(match) && !isKnownWord(match.toLowerCase())) {
           const collapsed = collapseStretched(match);
           if (collapsed.toLowerCase() !== match.toLowerCase()) {
             recordCorrection(match, collapsed);
@@ -3516,8 +3676,14 @@
             continue;
           }
 
-          // Default Noun
-          t.tag = "NN";
+          // English-First Extraction Fallback (Feature #4)
+          // If it fails all English morphology/context rules AND isn't in the English dictionary,
+          // it is most likely a Tagalog word (or slang). Tag it as TL to prevent lemmatization/grouping.
+          if (typeof FULL_ENGLISH_DICT !== 'undefined' && !FULL_ENGLISH_DICT.has(l) && !KNOWN_WORDS.has(l)) {
+            t.tag = "TL";
+          } else {
+            t.tag = "NN";
+          }
         }
       }
     }
@@ -3605,7 +3771,10 @@
       for (const sent of sentences) {
         for (const t of sent.tokens) {
           const l = t.lower;
-          if (ALL_STOP.has(l) || l.length < 3 && !TL_WORDS.has(l)) continue;
+          // Protect negations from length checks, but then skip them from term extraction
+          if (ALL_STOP.has(l) || (l.length < 3 && !TL_WORDS.has(l) && !NEGATIONS.has(l))) continue;
+          if (NEGATIONS.has(l)) continue;
+
           if (t.tag === "TL" || TL_WORDS.has(l)) {
             untagged.add(l);
             continue;
@@ -3637,9 +3806,16 @@
 
     function highlight(clean, terms) {
       const set = new Set(terms.map(t => t.toLowerCase()));
-      return esc(clean).replace(/[A-Za-z][A-Za-z'-]*/g, w => {
+      const fullHighlighted = esc(clean).replace(/[A-Za-z][A-Za-z'-]*/g, w => {
         const l = w.toLowerCase(); return set.has(l) || set.has(lemma(l)) ? "<mark>" + w + "</mark>" : w;
       });
+
+      const condensed = clean.replace(/\b([A-Za-z]+(?:'[A-Za-z]+)?)\b/gi, (match) => {
+        if (ALL_STOP.has(match.toLowerCase())) return "";
+        return match;
+      }).replace(/\s+/g, " ").replace(/ ([.,!?])/g, "$1").replace(/^[.,!?]\s*/, "").trim();
+
+      return `<div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--line);"><div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mute); margin-bottom: 4px; font-weight: 600;">Full Text (Terms Highlighted)</div>${fullHighlighted}</div><div><div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mute); margin-bottom: 4px; font-weight: 600;">Condensed (Stopwords Removed)</div>${esc(condensed)}</div>`;
     }
 
     function renderReviewChips() {
@@ -3654,13 +3830,23 @@
 <div class="chip-wrap">
   <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
     <button class="chip-btn" onclick="toggleDef(this, '${esc(t)}', '${esc(tag)}')" title="Click to view WordNet & Corpus definition (${esc(getPosDescription(tag))})">${esc(t)} ${renderPosBadge(tag)}</button>
-    <button class="chip-del" onclick="removeReviewTerm(event, '${esc(t)}')" title="Remove term" style="border:none; background:transparent; cursor:pointer; color:var(--mute); padding:6px 10px; font-size:16px; line-height:1;">&times;</button>
+    <div style="display:flex; align-items:center;">
+      <button class="chip-min" onclick="toggleDef(this.closest('.chip-wrap').querySelector('.chip-btn'))" title="Minimize popup" style="border:none; background:transparent; cursor:pointer; color:var(--mute); padding:6px; font-size:14px; align-items:center; justify-content:center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      </button>
+      <button class="chip-del" onclick="removeReviewTerm(event, '${esc(t)}')" title="Remove term" style="border:none; background:transparent; cursor:pointer; color:var(--mute); padding:6px 10px; font-size:16px; line-height:1;">&times;</button>
+    </div>
   </div>
   <div class="term-dict"><div class="term-dict-inner"></div></div>
 </div>`;
       }).join("") + untagged.map(t => `
 <div class="chip-wrap" style="border-style:dashed; background:transparent;">
-  <button class="chip-btn" style="color:var(--mute);" onclick="toggleDef(this, '${esc(t)}', 'TL')" title="Click to view Taglish corpus information">${esc(t)} ${renderPosBadge('TL')}</button>
+  <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+    <button class="chip-btn" style="color:var(--mute);" onclick="toggleDef(this, '${esc(t)}', 'TL')" title="Click to view Taglish corpus information">${esc(t)} ${renderPosBadge('TL')}</button>
+    <button class="chip-min" onclick="toggleDef(this.closest('.chip-wrap').querySelector('.chip-btn'))" title="Minimize popup" style="border:none; background:transparent; cursor:pointer; color:var(--mute); padding:6px 10px; font-size:14px; align-items:center; justify-content:center;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+  </div>
   <div class="term-dict"><div class="term-dict-inner"></div></div>
 </div>`).join("");
 
@@ -3893,8 +4079,8 @@
         : "";
 
       const pagerHtml = total > 1
-        ? `<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: rgba(66, 133, 244, 0.07); border: 1px solid rgba(66, 133, 244, 0.2); border-radius: 6px; padding: 5px 10px;">
-             <div style="display: flex; align-items: center; gap: 6px;">
+        ? `<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: rgba(66, 133, 244, 0.07); border: 1px solid rgba(66, 133, 244, 0.2); border-radius: 6px; padding: 5px 10px; flex-wrap: wrap; gap: 6px;">
+             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                <span style="font-size: 11px; font-weight: 700; color: #1d4ed8;">Meaning ${idx + 1} of ${total}</span>
                <span style="font-size: 10px; color: var(--mute);">(${total} synset meanings)</span>
              </div>
@@ -3912,7 +4098,7 @@
               <span style="font-weight: 700; font-size: 14px; color: var(--ink);">${esc(info.term || word)}</span>
               <span style="font-size: 10px; font-family: monospace; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: rgba(66, 133, 244, 0.12); color: #2563eb;">${esc(current.synset || info.synset || '')}</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
               <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: var(--fill); color: var(--mute); text-transform: uppercase;">${esc(current.pos || info.pos || 'NN')}</span>
               ${freqText}
             </div>
@@ -4562,7 +4748,7 @@
         badge.style.background = "rgba(37, 99, 235, 0.1)";
         badge.style.color = "#2563eb";
 
-        $("lens-count").textContent = "Analyzing image...";
+        if ($("lens-count")) $("lens-count").textContent = "Analyzing image...";
         $("lens-hint").innerHTML = "Scanning handwriting and text with local OCR engine...";
 
         $("ocrNote").hidden = false;
@@ -4725,7 +4911,7 @@
           badge.style.background = "rgba(239, 68, 68, 0.12)";
           badge.style.color = "#dc2626";
           badge.style.borderColor = "rgba(239, 68, 68, 0.25)";
-          $("lens-count").textContent = "Scan error";
+          if ($("lens-count")) $("lens-count").textContent = "Scan error";
           $("ocrNote").innerHTML = `
             <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:10px; background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.25); color:var(--ink);">
               <div style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:rgba(239, 68, 68, 0.2); color:#dc2626; flex-shrink:0; font-size:12px; font-weight:700;">!</div>
