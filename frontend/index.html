@@ -2588,13 +2588,13 @@
   <script>
     const $ = id => document.getElementById(id);
     const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const RAW_STOP = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very can could would should will just do does did have has had cannot please not no nor never without".split(" "));
-    const RAW_TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya daw raw po ba din rin lang naman nga pa kasi ito iyan iyon si ni kay hindi wala walang ayaw di".split(" "));
+    const RAW_STOP = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very can could would should will just do does did have has had cannot please not no nor never without because though through before after while during between".split(" "));
+    const RAW_TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya kami tayo kayo sila niya namin natin ninyo nila akin iyo kaniya kanya atin amin inyo kanila daw raw po opo ho oho ba din rin lang lamang naman nga pa kasi ito iyan iyon dine dito diyan doon ire nito niyan noon ganito ganyan ganoon gayon si ni kay sina nina kina pero ngunit subalit habang kung kapag pag dahil sapagkat kaya basta kahit sana pala muna tuloy yata talaga hindi wala walang ayaw di".split(" "));
     const NEGATIONS = new Set(["not", "no", "nor", "never", "cannot", "without", "hindi", "wala", "walang", "ayaw", "di"]);
     const STOP = new Set([...RAW_STOP].filter(x => !NEGATIONS.has(x)));
     const TL_STOP = new Set([...RAW_TL_STOP].filter(x => !NEGATIONS.has(x)));
     const ALL_STOP = new Set([...STOP, ...TL_STOP]);
-    const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap gawin aralin kailangan tandaan basahin sulat sagot tanong".split(" "));
+    const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap mahirap madali gawin aralin kailangan tandaan basahin sulat sagot tanong katanungan paliwanag halimbawa katotohanan kaalaman agham kasaysayan lipunan bansa bayan mamamayan pamahalaan kultura panitikan wika salita pangungusap buhay kalikasan lupa tubig hangin apoy araw buwan bituin halaman hayop katawan mundo estudyante guro paaralan aklat libro papel maganda masaya malungkot malaki maliit mataas mababa totoo tama mali mabuti masama magaling marami kaunti lahat iba buo ngayon bukas kahapon kanina mamaya palagi minsan madalas mabilis matagal sandali saan kailan bakit paano ano sino alin nasaan kanino gaano ilan kumusta darating dumating kain kumain basa sumulat gawa ginawa punta pumunta aral nag-aaral alam nakita tingin sabi kwento tulong bili bigay kuha hawak lakad takbo tulog naniniwala paniniwala".split(" "));
     const NONTERM = new Set("equals".split(" "));
     const CONTR = {
       "couldn't": "could not",
@@ -2671,6 +2671,78 @@
       "r": "are",
       "bc": "because",
       "b/c": "because",
+      "coz": "because",
+      "cuz": "because",
+      "bcoz": "because",
+      "bcuz": "because",
+      "bcos": "because",
+      "'coz": "because",
+      "'cuz": "because",
+      "'cause": "because",
+      "tho": "though",
+      "thru": "through",
+      "alr": "alright",
+      "alrite": "alright",
+      "rn": "right now",
+      "tbh": "to be honest",
+      "idk": "i do not know",
+      "imo": "in my opinion",
+      "imho": "in my humble opinion",
+      "btw": "by the way",
+      "abt": "about",
+      "smth": "something",
+      "sth": "something",
+      "sb": "somebody",
+      "b4": "before",
+      "gr8": "great",
+      "wanna": "want to",
+      "gonna": "going to",
+      "gotta": "got to",
+      "kinda": "kind of",
+      "sorta": "sort of",
+      "lemme": "let me",
+      "gimme": "give me",
+      "dunno": "do not know",
+      "msg": "message",
+      "txt": "text",
+      "pic": "picture",
+      "pics": "pictures",
+      "sec": "second",
+      "secs": "seconds",
+      "min": "minute",
+      "mins": "minutes",
+      "hr": "hour",
+      "hrs": "hours",
+      "wk": "week",
+      "wks": "weeks",
+      "yr": "year",
+      "yrs": "years",
+      "ch": "chapter",
+      "chap": "chapter",
+      "vs": "versus",
+      "esp": "especially",
+      "bkt": "bakit",
+      "pano": "paano",
+      "sya": "siya",
+      "cya": "siya",
+      "diba": "hindi ba",
+      "dba": "hindi ba",
+      "kase": "kasi",
+      "tlga": "talaga",
+      "pede": "puwede",
+      "pwede": "puwede",
+      "dpt": "dapat",
+      "bka": "baka",
+      "aq": "ako",
+      "kau": "kayo",
+      "cla": "sila",
+      "kelangan": "kailangan",
+      "mjo": "medyo",
+      "plagi": "palagi",
+      "cguro": "siguro",
+      "sguro": "siguro",
+      "antay": "hintay",
+      "intay": "hintay",
       "w/": "with",
       "w/o": "without",
       "info": "information",
@@ -4050,7 +4122,7 @@
       "find", "give", "take", "keep", "hold", "tell", "say", "know", "think", "see",
       "look", "hear", "feel", "come", "go", "leave", "help", "work", "play", "live",
       "need", "want", "mean", "seem", "part", "time", "year", "day", "way", "thing",
-      "man", "world", "life", "hand", "eye", "place", "case", "point", "group", "fact",
+      "man", "world", "life", "hand", "eye", "place", "case", "cause", "causes", "caused", "causing", "effect", "effects", "result", "results", "point", "group", "fact",
       "form", "word", "line", "page", "text", "note", "read", "write", "book", "food",
       "cool", "really", "free", "tree", "deep", "current", "thinking"
     ]);
@@ -4175,7 +4247,100 @@
       return false;
     }
 
+    const TL_ROOTS = new Set([
+      "dating", "kain", "basa", "sulat", "gawa", "punta", "aral", "tanda", "hirap", "alam",
+      "kita", "tingin", "dinig", "sabi", "usap", "tulong", "bili", "bigay", "kuha", "hawak",
+      "dala", "lakad", "takbo", "tulog", "gising", "tawa", "iyak", "sakay", "baba", "pasok",
+      "labas", "tayo", "upo", "lipad", "langoy", "laro", "turo", "kinig", "isip", "damdam",
+      "subok", "gamit", "buo", "ayos", "linis", "pili", "hanap", "buhay", "bahay", "patay",
+      "sama", "hiwalay", "lipat", "tira", "tagal", "bilis", "ganda", "pangit", "bait", "laki",
+      "liit", "taas", "haba", "ikli", "lapit", "layo", "dami", "unti", "saya", "lungkot",
+      "galit", "takot", "tapang", "hiya", "galing", "gutom", "uhaw", "pagod", "init", "lamig",
+      "bata", "tanda", "linaw", "labo", "dilim", "liwanag", "bigat", "gaan", "tamis", "pait",
+      "alat", "asim", "anghang", "linamnam", "bango", "baho", "tibay", "hina", "sakit",
+      "bayan", "tao", "guro", "paaralan", "tubig", "lupa", "hangin", "araw", "gabi", "mundo",
+      "kultura", "panitikan", "wika", "lipunan", "pamahalaan", "kasaysayan", "katotohanan",
+      "pamilya", "kaibigan", "silid", "aklat", "libro", "papel", "tanong", "sagot", "agham",
+      "daan", "taas", "noon", "doon", "totoo", "saan", "kailan", "bakit", "paano", "ano", "sino"
+    ]);
+
+    function isTagalogWord(w) {
+      if (!w) return false;
+      const l = w.toLowerCase().replace(/[^a-zñ-]/g, '');
+      if (TL_WORDS.has(l) || TL_STOP.has(l) || RAW_TL_STOP.has(l) || TL_ROOTS.has(l)) return true;
+
+      // Intervocalic d/r alternation with reduplication (e.g. da-ra-ting -> root dating, da-ra-mi -> dami)
+      if (/^d([aeiou])r\1/i.test(l)) {
+        const v = l[1];
+        const rest = l.slice(4);
+        const rootCand = 'd' + v + rest;
+        if (TL_ROOTS.has(rootCand) || TL_WORDS.has(rootCand)) return true;
+      }
+
+      // Linker -ng (e.g. taong, araling, buhayng, bansang)
+      if (l.endsWith('ng') && l.length > 4) {
+        const base = l.slice(0, -2);
+        if (TL_WORDS.has(base) || TL_ROOTS.has(base)) return true;
+      }
+      // Linker -g (after n, e.g. dahilang -> dahil)
+      if (l.endsWith('g') && l.length > 4) {
+        const base = l.slice(0, -1);
+        if (TL_WORDS.has(base) || TL_ROOTS.has(base)) return true;
+      }
+
+      // Reduplication check: CV reduplication for future aspect (e.g. da-dating, ka-kain, ba-basa, su-sulat, pu-punta)
+      if (l.length >= 4 && l[0] === l[2] && l[1] === l[3]) {
+        const root = l.slice(2);
+        if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return true;
+      }
+
+      // De-affixing:
+      let stem = l;
+      if (/^(ipinag|pinag|nagpa|magpa|nakipag|makipag)/.test(stem)) {
+        stem = stem.replace(/^(ipinag|pinag|nagpa|magpa|nakipag|makipag)/, '');
+      } else if (/^(nag|mag|pag|ipag)/.test(stem)) {
+        stem = stem.slice(3);
+      } else if (/^(na|ma|pa|ka|sa)/.test(stem)) {
+        stem = stem.slice(2);
+      } else if (stem.startsWith('i-') || stem.startsWith('i')) {
+        stem = stem.replace(/^i-?/, '');
+      }
+
+      if (TL_ROOTS.has(stem) || TL_WORDS.has(stem)) return true;
+      if (stem.length >= 4 && stem[0] === stem[2] && stem[1] === stem[3]) {
+        const root = stem.slice(2);
+        if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return true;
+      }
+
+      // Infix stripping: -um-, -in-
+      if (stem.length > 4 && (stem.slice(1, 3) === 'um' || stem.slice(1, 3) === 'in')) {
+        const uninfixed = stem[0] + stem.slice(3);
+        if (TL_ROOTS.has(uninfixed) || TL_WORDS.has(uninfixed)) return true;
+        if (uninfixed.length >= 4 && uninfixed[0] === uninfixed[2] && uninfixed[1] === uninfixed[3]) {
+          const root = uninfixed.slice(2);
+          if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return true;
+        }
+      }
+
+      // Suffix stripping: -an, -in, -han, -hin
+      if (stem.endsWith('han') || stem.endsWith('hin')) {
+        const s = stem.slice(0, -3);
+        if (TL_ROOTS.has(s) || TL_WORDS.has(s)) return true;
+      }
+      if (stem.endsWith('an') || stem.endsWith('in')) {
+        const s = stem.slice(0, -2);
+        if (TL_ROOTS.has(s) || TL_WORDS.has(s)) return true;
+        if (s.length >= 4 && s[0] === s[2] && s[1] === s[3]) {
+          const root = s.slice(2);
+          if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return true;
+        }
+      }
+
+      return false;
+    }
+
     function isKnownWord(w) {
+      if (isTagalogWord(w)) return true;
       if (typeof FULL_ENGLISH_DICT !== 'undefined' && FULL_ENGLISH_DICT.has(w)) return true;
       if (KNOWN_WORDS.has(w)) return true;
       if (w.endsWith("s") && KNOWN_WORDS.has(w.slice(0, -1))) return true;
@@ -4196,11 +4361,11 @@
       return replacement.toLowerCase();
     }
 
-    // Collapse stretched words with 2+ repeated characters (e.g. soooo -> so, pllleeaasseee -> please, cooool -> cool)
+    // Collapse stretched words with 3+ repeated characters (e.g. soooo -> so, pllleeaasseee -> please, cooool -> cool)
     function collapseStretched(word) {
-      if (!/([A-Za-z])\1/.test(word)) return word; // Fast exit if no repeated letters
+      if (!/([A-Za-z])\1{2,}/.test(word)) return word; // Fast exit if no 3+ repeated letters
       const lower = word.toLowerCase();
-      if (isKnownWord(lower)) return word; // Already valid (e.g., "good")
+      if (isKnownWord(lower)) return word; // Already valid (e.g., "good", "cool", "saan", "noon")
 
       const groups = [];
       const regex = /([a-z])\1+/g;
@@ -4259,8 +4424,8 @@
 
     function autocorrectWord(word) {
       const lower = word.toLowerCase();
-      // CRITICAL GUARD: Already-known, morphologically valid, or short words must NEVER be changed!
-      if (isKnownWord(lower) || lower.length <= 2 || /^\d+$/.test(lower)) {
+      // CRITICAL GUARD: Already-known, Filipino words, morphologically valid, or short words must NEVER be changed!
+      if (isKnownWord(lower) || isTagalogWord(lower) || lower.length <= 2 || /^\d+$/.test(lower)) {
         return { word, corrected: false };
       }
 
@@ -4270,44 +4435,28 @@
         return { word: fixed, original: word, corrected: true, replacement: COMMON_TYPOS[lower] };
       }
 
-      const hasFullDict = typeof FULL_ENGLISH_DICT !== 'undefined';
-      
-      // Strict single-edit distance against known vocabulary (length >= 5 only to protect short words)
+      // Strict single-edit distance against core academic vocabulary (length >= 5 only to protect short words)
       if (lower.length >= 5) {
         let bestMatch = null;
+        const edits = [];
+        const alphabet = "abcdefghijklmnopqrstuvwxyz";
+        const n = lower.length;
+        // deletions
+        for (let i = 0; i < n; i++) edits.push(lower.slice(0, i) + lower.slice(i + 1));
+        // transpositions
+        for (let i = 0; i < n - 1; i++) edits.push(lower.slice(0, i) + lower[i + 1] + lower[i] + lower.slice(i + 2));
+        // substitutions
+        for (let i = 0; i < n; i++) {
+          for (const c of alphabet) edits.push(lower.slice(0, i) + c + lower.slice(i + 1));
+        }
+        // insertions
+        for (let i = 0; i <= n; i++) {
+          for (const c of alphabet) edits.push(lower.slice(0, i) + c + lower.slice(i));
+        }
 
-        if (hasFullDict) {
-          const edits = [];
-          const alphabet = "abcdefghijklmnopqrstuvwxyz";
-          const n = lower.length;
-          // deletions
-          for (let i = 0; i < n; i++) edits.push(lower.slice(0, i) + lower.slice(i + 1));
-          // transpositions
-          for (let i = 0; i < n - 1; i++) edits.push(lower.slice(0, i) + lower[i + 1] + lower[i] + lower.slice(i + 2));
-          // substitutions
-          for (let i = 0; i < n; i++) {
-            for (const c of alphabet) edits.push(lower.slice(0, i) + c + lower.slice(i + 1));
-          }
-          // insertions
-          for (let i = 0; i <= n; i++) {
-            for (const c of alphabet) edits.push(lower.slice(0, i) + c + lower.slice(i));
-          }
-
-          const valid = edits.filter(c => c[0] === lower[0] && (KNOWN_WORDS.has(c) || FULL_ENGLISH_DICT.has(c)));
-          if (valid.length > 0) {
-            bestMatch = valid.find(c => KNOWN_WORDS.has(c)) || valid[0];
-          }
-        } else {
-          let minDistance = 99;
-          for (const known of KNOWN_WORDS) {
-            if (Math.abs(known.length - lower.length) > 1) continue;
-            if (known[0] !== lower[0]) continue; // First letter must match
-            const d = editDistance(lower, known);
-            if (d === 1 && d < minDistance) {
-              minDistance = d;
-              bestMatch = known;
-            }
-          }
+        const valid = edits.filter(c => c[0] === lower[0] && KNOWN_WORDS.has(c));
+        if (valid.length > 0) {
+          bestMatch = valid[0];
         }
 
         if (bestMatch) {
@@ -4351,7 +4500,7 @@
         return match;
       });
 
-      // 2. Shortcuts & Abbreviations (e.g. pls -> please, imp -> important, yun -> yung, di -> hindi, w/ -> with)
+      // 2. Shortcuts & Abbreviations (e.g. pls -> please, imp -> important, coz -> because, 'cause -> because, yun -> yung, di -> hindi, w/ -> with, b4 -> before)
       // Slash shortcuts
       s = s.replace(/\b(w\/o|w\/|b\/c)\b/gi, (match) => {
         const l = match.toLowerCase();
@@ -4363,11 +4512,13 @@
         return match;
       });
 
-      // Standard word shortcuts
-      s = s.replace(/\b([A-Za-z]+)\b/gi, (match) => {
-        const l = match.toLowerCase();
-        if (SHORTCUTS[l]) {
-          const repl = applyCasing(match, SHORTCUTS[l]);
+      // Word, slang, and abbreviation shortcuts (supports leading apostrophe like 'cause, 'coz, 'cuz, and alphanumeric like b4, gr8)
+      s = s.replace(/(?<![A-Za-z0-9])(?:['’])?[A-Za-z0-9]+\b/gi, (match) => {
+        const l = match.toLowerCase().replace("’", "'");
+        const bare = l.replace(/^['’]/, "");
+        const key = SHORTCUTS[l] ? l : (SHORTCUTS[bare] ? bare : null);
+        if (key && SHORTCUTS[key]) {
+          const repl = applyCasing(match.replace(/^['’]/, ""), SHORTCUTS[key]);
           recordCorrection(match, repl);
           return repl;
         }
@@ -4376,7 +4527,7 @@
 
       // 3. Stretched words collapsing (e.g. soooo -> so, pleeease -> please, cooool -> cool, sooobrang -> sobrang)
       s = s.replace(/\b([A-Za-z]+)\b/g, (match) => {
-        if (/([A-Za-z])\1/.test(match) && !isKnownWord(match.toLowerCase())) {
+        if (/([A-Za-z])\1{2,}/.test(match) && !isKnownWord(match.toLowerCase())) {
           const collapsed = collapseStretched(match);
           if (collapsed.toLowerCase() !== match.toLowerCase()) {
             recordCorrection(match, collapsed);
@@ -4756,17 +4907,25 @@
     }
 
     function highlight(clean, terms) {
-      const set = new Set(terms.map(t => t.toLowerCase()));
-      const fullHighlighted = esc(clean).replace(/[A-Za-z][A-Za-z'-]*/g, w => {
-        const l = w.toLowerCase(); return set.has(l) || set.has(lemma(l)) ? "<mark>" + w + "</mark>" : w;
-      });
-
+      const condensedWords = new Set();
       const condensed = clean.replace(/\b([A-Za-z]+(?:'[A-Za-z]+)?)\b/gi, (match) => {
         if (ALL_STOP.has(match.toLowerCase())) return "";
+        condensedWords.add(match.toLowerCase());
         return match;
       }).replace(/\s+/g, " ").replace(/ ([.,!?])/g, "$1").replace(/^[.,!?]\s*/, "").trim();
 
-      return `<div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--line);"><div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mute); margin-bottom: 4px; font-weight: 600;">Full Text (Terms Highlighted)</div>${fullHighlighted}</div><div><div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mute); margin-bottom: 4px; font-weight: 600;">Condensed (Stopwords Removed)</div>${esc(condensed)}</div>`;
+      const termSet = new Set(Array.isArray(terms) ? terms.map(t => t.toLowerCase()) : []);
+      const fullHighlighted = clean.replace(/\b([A-Za-z]+(?:'[A-Za-z]+)?)\b/gi, w => {
+        const l = w.toLowerCase();
+        const shouldHighlight = condensedWords.has(l) || termSet.has(l) || termSet.has(lemma(l));
+        return shouldHighlight ? `___MARK_START___${w}___MARK_END___` : w;
+      });
+
+      const safeHighlighted = esc(fullHighlighted)
+        .replace(/___MARK_START___/g, "<mark>")
+        .replace(/___MARK_END___/g, "</mark>");
+
+      return `<div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--line);"><div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mute); margin-bottom: 4px; font-weight: 600;">Full Text (Terms Highlighted)</div>${safeHighlighted}</div><div><div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mute); margin-bottom: 4px; font-weight: 600;">Condensed (Stopwords Removed)</div>${esc(condensed)}</div>`;
     }
 
     function renderReviewChips() {
@@ -4813,8 +4972,9 @@
 
     window.removeReviewTerm = function(e, term) {
       if (e) e.stopPropagation();
-      if (!cur || !cur.terms) return;
-      cur.terms = cur.terms.filter(t => t.toLowerCase() !== term.toLowerCase());
+      if (!cur) return;
+      if (cur.terms) cur.terms = cur.terms.filter(t => t.toLowerCase() !== term.toLowerCase());
+      if (cur.untagged) cur.untagged = cur.untagged.filter(t => t.toLowerCase() !== term.toLowerCase());
       if (activeInspectorState.review && activeInspectorState.review.word && activeInspectorState.review.word.toLowerCase() === term.toLowerCase()) {
         closeInspector('review');
       }

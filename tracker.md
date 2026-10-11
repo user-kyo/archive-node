@@ -21,10 +21,11 @@ A clear, checklist-based tracker for all features, text processing, and system c
 ### 2. Text Cleanup & Autocorrect
 - [x] **Expand contractions** — Changes shortcuts to full words (`can't` → `cannot`, `it's` → `it is`, `you're` → `you are`).
 - [x] **Collapse stretched words** — Normalizes elongated words (`soooo` → `so`, `pleeease` → `please`, `cooool` → `cool`).
+- [x] **Causal slang & study abbreviations** — Detects and expands causal slang (`coz`, `cuz`, `'cause` → `because`, `tho` → `though`, `thru` → `through`, `b4` → `before`, `rn` → `right now`, `tbh` → `to be honest`) while preserving capitalized casing (`Coz` → `Because`).
 - [x] **Standardize chat shortcuts** — Converts informal study slang (`pls` → `please`, `bc` → `because`, `imp` → `important`, `diff` → `difference`).
-- [x] **Taglish shortcut cleanup** — Fixes Filipino shortcuts (`yun` → `yung`, `di` → `hindi`).
+- [x] **Taglish shortcut cleanup** — Fixes Filipino shortcuts (`bkt` → `bakit`, `pano` → `paano`, `sya` → `siya`, `tlga` → `talaga`, `yun` → `yung`, `di` → `hindi`).
 - [x] **Fix scan & spelling errors** — Corrects common typos (`photosynthesys` → `photosynthesis`, `glucuse` → `glucose`, `sunllght` → `sunlight`).
-- [x] **Protect correct words** — Real academic words (`importance`, `difference`, `evidence`) are never mistakenly altered.
+- [x] **Protect correct words** — Real academic words (`importance`, `difference`, `evidence`, `cause` in `root cause` / `cause and effect`) and Filipino / Taglish terms (`saan`, `darating`, `kailan`, `bakit`) are never mistakenly altered.
 - [x] **Before/After change log** — Shows a clear summary of all automatic corrections made to your text.
 
 ### 3. Language & Grammar Analysis

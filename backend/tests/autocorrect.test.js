@@ -6,9 +6,25 @@
 // 4. Misspelled words / OCR errors (photosynthesys -> photosynthesis, glucuse -> glucose, etc.)
 // 5. Preserving already correct words (importance, important, difference, different, significance, substance, evidence, etc.)
 
-const STOP = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very can could would should will just do does did have has had cannot please not hindi good cool well great much many all some any few more most".split(" "));
-const TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya daw raw po ba din rin lang naman nga pa kasi ito iyan iyon si ni kay hindi".split(" "));
-const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap gawin aralin kailangan tandaan basahin sulat sagot tanong".split(" "));
+const STOP = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very can could would should will just do does did have has had cannot please not hindi good cool well great much many all some any few more most because though through before after while during between".split(" "));
+const TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya kami tayo kayo sila niya namin natin ninyo nila akin iyo kaniya kanya atin amin inyo kanila daw raw po opo ho oho ba din rin lang lamang naman nga pa kasi ito iyan iyon dine dito diyan doon ire nito niyan noon ganito ganyan ganoon gayon si ni kay sina nina kina pero ngunit subalit habang kung kapag pag dahil sapagkat kaya basta kahit sana pala muna tuloy yata talaga hindi wala walang ayaw di".split(" "));
+const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap mahirap madali gawin aralin kailangan tandaan basahin sulat sagot tanong katanungan paliwanag halimbawa katotohanan kaalaman agham kasaysayan lipunan bansa bayan mamamayan pamahalaan kultura panitikan wika salita pangungusap buhay kalikasan lupa tubig hangin apoy araw buwan bituin halaman hayop katawan mundo estudyante guro paaralan aklat libro papel maganda masaya malungkot malaki maliit mataas mababa totoo tama mali mabuti masama magaling marami kaunti lahat iba buo ngayon bukas kahapon kanina mamaya palagi minsan madalas mabilis matagal sandali saan kailan bakit paano ano sino alin nasaan kanino gaano ilan kumusta darating dumating kain kumain basa sumulat gawa ginawa punta pumunta aral nag-aaral alam nakita tingin sabi kwento tulong bili bigay kuha hawak lakad takbo tulog naniniwala paniniwala".split(" "));
+const TL_ROOTS = new Set([
+  "dating", "kain", "basa", "sulat", "gawa", "punta", "aral", "tanda", "hirap", "alam",
+  "kita", "tingin", "dinig", "sabi", "usap", "tulong", "bili", "bigay", "kuha", "hawak",
+  "dala", "lakad", "takbo", "tulog", "gising", "tawa", "iyak", "sakay", "baba", "pasok",
+  "labas", "tayo", "upo", "lipad", "langoy", "laro", "turo", "kinig", "isip", "damdam",
+  "subok", "gamit", "buo", "ayos", "linis", "pili", "hanap", "buhay", "bahay", "patay",
+  "sama", "hiwalay", "lipat", "tira", "tagal", "bilis", "ganda", "pangit", "bait", "laki",
+  "liit", "taas", "haba", "ikli", "lapit", "layo", "dami", "unti", "saya", "lungkot",
+  "galit", "takot", "tapang", "hiya", "galing", "gutom", "uhaw", "pagod", "init", "lamig",
+  "bata", "tanda", "linaw", "labo", "dilim", "liwanag", "bigat", "gaan", "tamis", "pait",
+  "alat", "asim", "anghang", "linamnam", "bango", "baho", "tibay", "hina", "sakit",
+  "bayan", "tao", "guro", "paaralan", "tubig", "lupa", "hangin", "araw", "gabi", "mundo",
+  "kultura", "panitikan", "wika", "lipunan", "pamahalaan", "kasaysayan", "katotohanan",
+  "pamilya", "kaibigan", "silid", "aklat", "libro", "papel", "tanong", "sagot", "agham",
+  "daan", "taas", "noon", "doon", "totoo", "saan", "kailan", "bakit", "paano", "ano", "sino"
+]);
 const NONTERM = new Set("equals".split(" "));
 
 const CONTR = {
@@ -50,6 +66,32 @@ const CONTR = {
 };
 
 const SHORTCUTS = {
+  // Apostrophe-less contractions
+  "im": "i am",
+  "cant": "cannot",
+  "wont": "will not",
+  "dont": "do not",
+  "didnt": "did not",
+  "doesnt": "does not",
+  "isnt": "is not",
+  "arent": "are not",
+  "wasnt": "was not",
+  "werent": "were not",
+  "havent": "have not",
+  "hasnt": "has not",
+  "hadnt": "had not",
+  "wouldnt": "would not",
+  "couldnt": "could not",
+  "shouldnt": "should not",
+  "thats": "that is",
+  "theres": "there is",
+  "whats": "what is",
+  "youre": "you are",
+  "theyre": "they are",
+  "weve": "we have",
+  "youve": "you have",
+  "theyve": "they have",
+  // Standard shortcuts & causal slang
   "pls": "please",
   "plz": "please",
   "imp": "important",
@@ -61,6 +103,78 @@ const SHORTCUTS = {
   "r": "are",
   "bc": "because",
   "b/c": "because",
+  "coz": "because",
+  "cuz": "because",
+  "bcoz": "because",
+  "bcuz": "because",
+  "bcos": "because",
+  "'coz": "because",
+  "'cuz": "because",
+  "'cause": "because",
+  "tho": "though",
+  "thru": "through",
+  "alr": "alright",
+  "alrite": "alright",
+  "rn": "right now",
+  "tbh": "to be honest",
+  "idk": "i do not know",
+  "imo": "in my opinion",
+  "imho": "in my humble opinion",
+  "btw": "by the way",
+  "abt": "about",
+  "smth": "something",
+  "sth": "something",
+  "sb": "somebody",
+  "b4": "before",
+  "gr8": "great",
+  "wanna": "want to",
+  "gonna": "going to",
+  "gotta": "got to",
+  "kinda": "kind of",
+  "sorta": "sort of",
+  "lemme": "let me",
+  "gimme": "give me",
+  "dunno": "do not know",
+  "msg": "message",
+  "txt": "text",
+  "pic": "picture",
+  "pics": "pictures",
+  "sec": "second",
+  "secs": "seconds",
+  "min": "minute",
+  "mins": "minutes",
+  "hr": "hour",
+  "hrs": "hours",
+  "wk": "week",
+  "wks": "weeks",
+  "yr": "year",
+  "yrs": "years",
+  "ch": "chapter",
+  "chap": "chapter",
+  "vs": "versus",
+  "esp": "especially",
+  "bkt": "bakit",
+  "pano": "paano",
+  "sya": "siya",
+  "cya": "siya",
+  "diba": "hindi ba",
+  "dba": "hindi ba",
+  "kase": "kasi",
+  "tlga": "talaga",
+  "pede": "puwede",
+  "pwede": "puwede",
+  "dpt": "dapat",
+  "bka": "baka",
+  "aq": "ako",
+  "kau": "kayo",
+  "cla": "sila",
+  "kelangan": "kailangan",
+  "mjo": "medyo",
+  "plagi": "palagi",
+  "cguro": "siguro",
+  "sguro": "siguro",
+  "antay": "hintay",
+  "intay": "hintay",
   "w/": "with",
   "w/o": "without",
   "info": "information",
@@ -88,7 +202,7 @@ const KNOWN_WORDS = new Set([
   "find", "give", "take", "keep", "hold", "tell", "say", "know", "think", "see",
   "look", "hear", "feel", "come", "go", "leave", "help", "work", "play", "live",
   "need", "want", "mean", "seem", "part", "time", "year", "day", "way", "thing",
-  "man", "world", "life", "hand", "eye", "place", "case", "point", "group", "fact",
+  "man", "world", "life", "hand", "eye", "place", "case", "cause", "causes", "caused", "causing", "effect", "effects", "result", "results", "point", "group", "fact",
   "form", "word", "line", "page", "text", "note", "read", "write", "book", "food",
   "photosynthesis", "respiration", "chlorophyll", "glucose", "sunlight", "oxygen",
   "carbon", "dioxide", "mitochondria", "membrane", "protein", "enzyme", "cell", "cells",
@@ -230,7 +344,83 @@ function hasValidMorphology(w) {
   return false;
 }
 
+function isTagalogWord(w) {
+  if (!w) return false;
+  const l = w.toLowerCase().replace(/[^a-zñ-]/g, '');
+  if (TL_WORDS.has(l) || TL_STOP.has(l) || TL_ROOTS.has(l)) return true;
+
+  // Intervocalic d/r alternation with reduplication (e.g. da-ra-ting -> root dating, da-ra-mi -> dami)
+  if (/^d([aeiou])r\1/i.test(l)) {
+    const v = l[1];
+    const rest = l.slice(4);
+    const rootCand = 'd' + v + rest;
+    if (TL_ROOTS.has(rootCand) || TL_WORDS.has(rootCand)) return true;
+  }
+
+  // Linker -ng (e.g. taong, araling, buhayng, bansang)
+  if (l.endsWith('ng') && l.length > 4) {
+    const base = l.slice(0, -2);
+    if (TL_WORDS.has(base) || TL_ROOTS.has(base)) return true;
+  }
+  // Linker -g (after n, e.g. dahilang -> dahil)
+  if (l.endsWith('g') && l.length > 4) {
+    const base = l.slice(0, -1);
+    if (TL_WORDS.has(base) || TL_ROOTS.has(base)) return true;
+  }
+
+  // Reduplication check: CV reduplication for future aspect (e.g. da-dating, ka-kain, ba-basa, su-sulat, pu-punta)
+  if (l.length >= 4 && l[0] === l[2] && l[1] === l[3]) {
+    const root = l.slice(2);
+    if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return true;
+  }
+
+  // De-affixing:
+  let stem = l;
+  if (/^(ipinag|pinag|nagpa|magpa|nakipag|makipag)/.test(stem)) {
+    stem = stem.replace(/^(ipinag|pinag|nagpa|magpa|nakipag|makipag)/, '');
+  } else if (/^(nag|mag|pag|ipag)/.test(stem)) {
+    stem = stem.slice(3);
+  } else if (/^(na|ma|pa|ka|sa)/.test(stem)) {
+    stem = stem.slice(2);
+  } else if (stem.startsWith('i-') || stem.startsWith('i')) {
+    stem = stem.replace(/^i-?/, '');
+  }
+
+  if (TL_ROOTS.has(stem) || TL_WORDS.has(stem)) return true;
+  if (stem.length >= 4 && stem[0] === stem[2] && stem[1] === stem[3]) {
+    const root = stem.slice(2);
+    if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return true;
+  }
+
+  // Infix stripping: -um-, -in-
+  if (stem.length > 4 && (stem.slice(1, 3) === 'um' || stem.slice(1, 3) === 'in')) {
+    const uninfixed = stem[0] + stem.slice(3);
+    if (TL_ROOTS.has(uninfixed) || TL_WORDS.has(uninfixed)) return true;
+    if (uninfixed.length >= 4 && uninfixed[0] === uninfixed[2] && uninfixed[1] === uninfixed[3]) {
+      const root = uninfixed.slice(2);
+      if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return true;
+    }
+  }
+
+  // Suffix stripping: -an, -in, -han, -hin
+  if (stem.endsWith('han') || stem.endsWith('hin')) {
+    const s = stem.slice(0, -3);
+    if (TL_ROOTS.has(s) || TL_WORDS.has(s)) return true;
+  }
+  if (stem.endsWith('an') || stem.endsWith('in')) {
+    const s = stem.slice(0, -2);
+    if (TL_ROOTS.has(s) || TL_WORDS.has(s)) return true;
+    if (s.length >= 4 && s[0] === s[2] && s[1] === s[3]) {
+      const root = s.slice(2);
+      if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return true;
+    }
+  }
+
+  return false;
+}
+
 function isKnownWord(w) {
+  if (isTagalogWord(w)) return true;
   if (KNOWN_WORDS.has(w)) return true;
   if (w.endsWith("s") && KNOWN_WORDS.has(w.slice(0, -1))) return true;
   if (w.endsWith("es") && KNOWN_WORDS.has(w.slice(0, -2))) return true;
@@ -346,7 +536,7 @@ function normalize(s) {
     return match;
   });
 
-  // 2. Shortcuts & Abbreviations (e.g. pls -> please, imp -> important, yun -> yung, di -> hindi, w/ -> with)
+  // 2. Shortcuts & Abbreviations (e.g. pls -> please, imp -> important, coz -> because, 'cause -> because, yun -> yung, di -> hindi, w/ -> with, b4 -> before)
   // Handle slash shortcuts first: w/, w/o, b/c
   s = s.replace(/\b(w\/o|w\/|b\/c)\b/gi, (match) => {
     const l = match.toLowerCase();
@@ -358,11 +548,13 @@ function normalize(s) {
     return match;
   });
 
-  // Handle word shortcuts
-  s = s.replace(/\b([A-Za-z]+)\b/gi, (match) => {
-    const l = match.toLowerCase();
-    if (SHORTCUTS[l]) {
-      const repl = applyCasing(match, SHORTCUTS[l]);
+  // Word, slang, and abbreviation shortcuts (supports leading apostrophe like 'cause, 'coz, 'cuz, and alphanumeric like b4, gr8)
+  s = s.replace(/(?<![A-Za-z0-9])(?:['’])?[A-Za-z0-9]+\b/gi, (match) => {
+    const l = match.toLowerCase().replace("’", "'");
+    const bare = l.replace(/^['’]/, "");
+    const key = SHORTCUTS[l] ? l : (SHORTCUTS[bare] ? bare : null);
+    if (key && SHORTCUTS[key]) {
+      const repl = applyCasing(match.replace(/^['’]/, ""), SHORTCUTS[key]);
       recordCorrection(match, repl);
       return repl;
     }
@@ -463,6 +655,29 @@ const tests = [
       { original: "sunllght", corrected: "sunlight" },
       { original: "chlorophy11", corrected: "chlorophyll" }
     ]
+  },
+  {
+    name: "Preserve Filipino words without false English autocorrection",
+    input: "Saan darating ang mga estudyante para sa aralin bukas kung kailan at bakit masaya?",
+    expectedCleanContains: "Saan darating ang mga estudyante para sa aralin bukas kung kailan at bakit masaya?",
+    expectedWordsPreserved: ["Saan", "darating", "aralin", "kailan", "bakit", "masaya"],
+    expectedNoCorrections: ["saan", "darating", "kailan", "bakit", "masaya"]
+  },
+  {
+    name: "Detect and expand slang words like coz, 'cause, tho, thru, b4, and Taglish shortcuts",
+    input: "Coz we need to study 'cause the root cause is unclear tho thru lesson b4 rn sya bkt.",
+    expectedCleanContains: "Because we need to study because the root cause is unclear though through lesson before right now siya bakit.",
+    expectedCorrections: [
+      { original: "Coz", corrected: "Because" },
+      { original: "'cause", corrected: "because" },
+      { original: "tho", corrected: "though" },
+      { original: "thru", corrected: "through" },
+      { original: "b4", corrected: "before" },
+      { original: "rn", corrected: "right now" },
+      { original: "sya", corrected: "siya" },
+      { original: "bkt", corrected: "bakit" }
+    ],
+    expectedNoCorrections: ["cause"]
   }
 ];
 

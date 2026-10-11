@@ -113,6 +113,29 @@ const tests = [
       { orig: "sunllght", corr: "sunlight" },
       { orig: "chlorophy11", corr: "chlorophyll" }
     ]
+  },
+  {
+    name: "Preserve Filipino words without false English autocorrection",
+    input: "Saan darating ang mga estudyante para sa aralin bukas kung kailan at bakit masaya?",
+    expectedClean: "Saan darating ang mga estudyante para sa aralin bukas kung kailan at bakit masaya?",
+    expectedPreserved: ["Saan", "darating", "aralin", "kailan", "bakit", "masaya"],
+    shouldNotHaveCorrections: ["saan", "darating", "kailan", "bakit", "masaya"]
+  },
+  {
+    name: "Detect and expand slang words like coz, 'cause, tho, thru, b4, and Taglish shortcuts",
+    input: "Coz we need to study 'cause the root cause is unclear tho thru lesson b4 rn sya bkt.",
+    expectedClean: "Because we need to study because the root cause is unclear though through lesson before right now siya bakit.",
+    expectedCorrections: [
+      { orig: "Coz", corr: "Because" },
+      { orig: "'cause", corr: "because" },
+      { orig: "tho", corr: "though" },
+      { orig: "thru", corr: "through" },
+      { orig: "b4", corr: "before" },
+      { orig: "rn", corr: "right now" },
+      { orig: "sya", corr: "siya" },
+      { orig: "bkt", corr: "bakit" }
+    ],
+    shouldNotHaveCorrections: ["cause"]
   }
 ];
 

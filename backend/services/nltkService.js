@@ -1,6 +1,7 @@
 const { spawn, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const WORDNET_DATA = require('../data/wordnet');
 
 const SCRIPT_PATH = path.join(__dirname, '..', 'nlp', 'nltk_wordnet.py');
 const STOPWORDS_PATH = path.join(__dirname, '..', 'data', 'nltk_stopwords.json');
@@ -333,6 +334,29 @@ async function getWordNet(word) {
       hypernym: tlEntry.synsets[0].hypernym,
       synonyms: tlEntry.synsets[0].synonyms,
       synsets: tlEntry.synsets
+    };
+    wordnetCache.set(clean, data);
+    return data;
+  }
+
+  // 6. Bundled WordNet dictionary fallback (100% offline resilience)
+  if (WORDNET_DATA && WORDNET_DATA[clean]) {
+    const entry = WORDNET_DATA[clean];
+    const data = {
+      word: clean,
+      lemma: entry.lemma || clean,
+      synset: entry.synsets ? entry.synsets[0].synset : `${clean}.n.01`,
+      pos: entry.pos || (entry.synsets ? entry.synsets[0].pos : 'noun [NN]'),
+      definition: entry.definition || (entry.synsets ? entry.synsets[0].definition : ''),
+      hypernym: entry.hypernym || (entry.synsets ? entry.synsets[0].hypernym : ''),
+      synonyms: entry.synonyms || (entry.synsets ? entry.synsets[0].synonyms : []),
+      synsets: entry.synsets || [{
+        synset: `${clean}.n.01`,
+        pos: entry.pos || 'noun [NN]',
+        definition: entry.definition,
+        hypernym: entry.hypernym,
+        synonyms: entry.synonyms || []
+      }]
     };
     wordnetCache.set(clean, data);
     return data;

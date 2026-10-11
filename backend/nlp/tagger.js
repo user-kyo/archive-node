@@ -14,7 +14,7 @@ const CONTR = {
 const path = require('path');
 const fs = require('fs');
 
-let STOP_WORDS = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very just do does did have has had cannot please not hindi".split(" "));
+let STOP_WORDS = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very just do does did have has had cannot please not hindi because though through before after while during between".split(" "));
 try {
   const swPath = path.join(__dirname, '..', 'data', 'nltk_stopwords.json');
   if (fs.existsSync(swPath)) {
@@ -23,8 +23,24 @@ try {
   }
 } catch (_) {}
 
-const TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya daw raw po ba din rin lang naman nga pa kasi ito iyan iyon si ni kay hindi".split(" "));
-const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap gawin aralin kailangan tandaan basahin sulat sagot tanong".split(" "));
+const TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya kami tayo kayo sila niya namin natin ninyo nila akin iyo kaniya kanya atin amin inyo kanila daw raw po opo ho oho ba din rin lang lamang naman nga pa kasi ito iyan iyon dine dito diyan doon ire nito niyan noon ganito ganyan ganoon gayon si ni kay sina nina kina pero ngunit subalit habang kung kapag pag dahil sapagkat kaya basta kahit sana pala muna tuloy yata talaga hindi wala walang ayaw di".split(" "));
+const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap mahirap madali gawin aralin kailangan tandaan basahin sulat sagot tanong katanungan paliwanag halimbawa katotohanan kaalaman agham kasaysayan lipunan bansa bayan mamamayan pamahalaan kultura panitikan wika salita pangungusap buhay kalikasan lupa tubig hangin apoy araw buwan bituin halaman hayop katawan mundo estudyante guro paaralan aklat libro papel maganda masaya malungkot malaki maliit mataas mababa totoo tama mali mabuti masama magaling marami kaunti lahat iba buo ngayon bukas kahapon kanina mamaya palagi minsan madalas mabilis matagal sandali saan kailan bakit paano ano sino alin nasaan kanino gaano ilan kumusta darating dumating kain kumain basa sumulat gawa ginawa punta pumunta aral nag-aaral alam nakita tingin sabi kwento tulong bili bigay kuha hawak lakad takbo tulog naniniwala paniniwala".split(" "));
+const TL_ROOTS = new Set([
+  "dating", "kain", "basa", "sulat", "gawa", "punta", "aral", "tanda", "hirap", "alam",
+  "kita", "tingin", "dinig", "sabi", "usap", "tulong", "bili", "bigay", "kuha", "hawak",
+  "dala", "lakad", "takbo", "tulog", "gising", "tawa", "iyak", "sakay", "baba", "pasok",
+  "labas", "tayo", "upo", "lipad", "langoy", "laro", "turo", "kinig", "isip", "damdam",
+  "subok", "gamit", "buo", "ayos", "linis", "pili", "hanap", "buhay", "bahay", "patay",
+  "sama", "hiwalay", "lipat", "tira", "tagal", "bilis", "ganda", "pangit", "bait", "laki",
+  "liit", "taas", "haba", "ikli", "lapit", "layo", "dami", "unti", "saya", "lungkot",
+  "galit", "takot", "tapang", "hiya", "galing", "gutom", "uhaw", "pagod", "init", "lamig",
+  "bata", "tanda", "linaw", "labo", "dilim", "liwanag", "bigat", "gaan", "tamis", "pait",
+  "alat", "asim", "anghang", "linamnam", "bango", "baho", "tibay", "hina", "sakit",
+  "bayan", "tao", "guro", "paaralan", "tubig", "lupa", "hangin", "araw", "gabi", "mundo",
+  "kultura", "panitikan", "wika", "lipunan", "pamahalaan", "kasaysayan", "katotohanan",
+  "pamilya", "kaibigan", "silid", "aklat", "libro", "papel", "tanong", "sagot", "agham",
+  "daan", "taas", "noon", "doon", "totoo", "saan", "kailan", "bakit", "paano", "ano", "sino"
+]);
 
 const DETERMINERS = new Set(["the", "a", "an", "this", "that", "these", "those", "every", "each", "some", "any", "all", "both", "yung"]);
 const MODALS = new Set(["can", "could", "will", "would", "shall", "should", "may", "might", "must", "cannot"]);
@@ -58,7 +74,8 @@ const KNOWN_NOUNS = new Set([
   "respiration", "mitochondria", "membrane", "protein", "enzyme", "cell", "plant", "leaf",
   "cycle", "calvin", "reaction", "demand", "supply", "inflation", "market", "price", "cost",
   "exam", "quiz", "test", "homework", "lecture", "formula", "equation", "force", "energy",
-  "gravity", "algorithm", "network", "database", "concept", "process", "system", "structure"
+  "gravity", "algorithm", "network", "database", "concept", "process", "system", "structure",
+  "cause", "effect", "result"
 ]);
 
 let KNOWN_ENTITIES = new Set(["melvin", "calvin", "reyes", "newton", "mendel", "einstein", "darwin"]);
@@ -108,37 +125,87 @@ function morphologyTag(w) {
 function stemTagalog(w) {
   if (!w) return "";
   const l = w.toLowerCase().replace(/[^a-zñ-]/g, '');
-  if (TL_WORDS.has(l)) return l;
-  
+  if (TL_WORDS.has(l) || TL_ROOTS.has(l)) return l;
+
+  // Intervocalic d/r alternation with reduplication (e.g. da-ra-ting -> dating, da-ra-mi -> dami)
+  if (/^d([aeiou])r\1/i.test(l)) {
+    const v = l[1];
+    const rest = l.slice(4);
+    const rootCand = 'd' + v + rest;
+    if (TL_ROOTS.has(rootCand) || TL_WORDS.has(rootCand)) return rootCand;
+  }
+
+  // Reduplication check: CV reduplication (e.g. da-dating, ka-kain, ba-basa, su-sulat, pu-punta)
+  if (l.length >= 4 && l[0] === l[2] && l[1] === l[3]) {
+    const root = l.slice(2);
+    if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return root;
+  }
+
   // Prefix stripping: nag-, mag-, na-, ma-, pag-, i-
   let stem = l;
-  if (stem.startsWith("nag") || stem.startsWith("mag") || stem.startsWith("pag")) {
+  if (/^(ipinag|pinag|nagpa|magpa|nakipag|makipag)/.test(stem)) {
+    stem = stem.replace(/^(ipinag|pinag|nagpa|magpa|nakipag|makipag)/, '');
+  } else if (/^(nag|mag|pag|ipag)/.test(stem)) {
     stem = stem.slice(3);
-  } else if (stem.startsWith("na") || stem.startsWith("ma")) {
+  } else if (/^(na|ma|pa|ka|sa)/.test(stem)) {
     stem = stem.slice(2);
   } else if (stem.startsWith("i-")) {
     stem = stem.slice(2);
+  } else if (stem.startsWith("i") && stem.length > 3) {
+    stem = stem.slice(1);
   }
   
+  if (TL_WORDS.has(stem) || TL_ROOTS.has(stem)) return stem;
+  if (stem.length >= 4 && stem[0] === stem[2] && stem[1] === stem[3]) {
+    const root = stem.slice(2);
+    if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return root;
+  }
+
   // Infix stripping: -um-, -in-
-  if (stem.length > 4) {
-    if (stem.slice(1, 3) === "um" || stem.slice(1, 3) === "in") {
-      stem = stem.charAt(0) + stem.slice(3);
+  if (stem.length > 4 && (stem.slice(1, 3) === "um" || stem.slice(1, 3) === "in")) {
+    const uninfixed = stem.charAt(0) + stem.slice(3);
+    if (TL_WORDS.has(uninfixed) || TL_ROOTS.has(uninfixed)) return uninfixed;
+    if (uninfixed.length >= 4 && uninfixed[0] === uninfixed[2] && uninfixed[1] === uninfixed[3]) {
+      const root = uninfixed.slice(2);
+      if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return root;
     }
   }
 
-  // Suffix stripping: -an, -in
+  // Suffix stripping: -an, -in, -han, -hin
+  if (stem.endsWith("han") || stem.endsWith("hin")) {
+    const s = stem.slice(0, -3);
+    if (TL_WORDS.has(s) || TL_ROOTS.has(s)) return s;
+  }
   if (stem.endsWith("an") || stem.endsWith("in")) {
-    if (stem.length > 4) stem = stem.slice(0, -2);
+    const s = stem.slice(0, -2);
+    if (TL_WORDS.has(s) || TL_ROOTS.has(s)) return s;
+    if (s.length >= 4 && s[0] === s[2] && s[1] === s[3]) {
+      const root = s.slice(2);
+      if (TL_ROOTS.has(root) || TL_WORDS.has(root)) return root;
+    }
   }
 
-  if (TL_WORDS.has(stem)) return stem;
   return l;
 }
 
 function normalizeText(s) {
   s = s.replace(/\b[\w']+n't\b|\bit's\b|\bi'm\b/gi, m => CONTR[m.toLowerCase()] || m);
+  s = s.replace(/\b(w\/o|w\/|b\/c)\b/gi, m => {
+    const l = m.toLowerCase();
+    return l === "w/" ? "with" : (l === "w/o" ? "without" : "because");
+  });
+  s = s.replace(/(?<![A-Za-z0-9])(?:['’])?(coz|cuz|cause|bcoz|bcuz|bcos)\b/gi, (m, word) => {
+    if (word.toLowerCase() === 'cause' && !/^['’]/.test(m)) return m;
+    return /^[A-Z]/.test(m.replace(/^['’]/, '')) ? 'Because' : 'because';
+  });
   s = s.replace(/\bpls\b/gi, "please").replace(/\bimp\b/gi, "important");
+  s = s.replace(/\btho\b/gi, "though").replace(/\bthru\b/gi, "through");
+  s = s.replace(/\brn\b/gi, "right now").replace(/\btbh\b/gi, "to be honest").replace(/\bidk\b/gi, "i do not know");
+  s = s.replace(/\bb4\b/gi, "before").replace(/\bgr8\b/gi, "great");
+  s = s.replace(/\b(bkt)\b/gi, "bakit").replace(/\b(pano)\b/gi, "paano");
+  s = s.replace(/\b(sya|cya)\b/gi, "siya").replace(/\b(tlga)\b/gi, "talaga");
+  s = s.replace(/\b(pede|pwede)\b/gi, "puwede").replace(/\b(dpt)\b/gi, "dapat");
+  s = s.replace(/\b(kelangan)\b/gi, "kailangan");
   s = s.replace(/\byun\b/gi, "yung").replace(/\b(di|nde)\b/gi, "hindi");
   s = s.replace(/([A-Za-z])\1{2,}/g, "$1").replace(/([!?.])\1{2,}/g, "$1$1");
   return s;
