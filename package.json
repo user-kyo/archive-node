@@ -1,0 +1,10 @@
+{
+  "name": "archivenode-root",
+  "version": "1.0.0",
+  "description": "ArchiveNode Study Notes Structuring Application",
+  "scripts": {
+    "postinstall": "cd backend && npm install",
+    "build": "cd backend && npm install && npx prisma db push && npm run db:seed",
+    "start": "cd backend && npm start"
+  }
+}
