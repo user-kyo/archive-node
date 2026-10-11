@@ -35,18 +35,20 @@ const initialNotes = [
 ];
 
 async function main() {
-  console.log('Migrating hardcoded notes to SQLite database...');
+  const existingCount = await prisma.note.count();
+  if (existingCount > 0) {
+    console.log(`Database already has ${existingCount} notes. Skipping initial seeding.`);
+    return;
+  }
 
-  // Clear existing notes to prevent duplicate runs
-  await prisma.note.deleteMany();
-
+  console.log('Seeding initial notes to SQLite database...');
   for (const note of initialNotes) {
     const created = await prisma.note.create({ data: note });
     console.log(`  ✓ Inserted note #${created.id}: "${created.title}"`);
   }
 
   const count = await prisma.note.count();
-  console.log(`\nSuccessfully migrated ${count} notes to SQLite database!`);
+  console.log(`\nSuccessfully seeded ${count} notes to SQLite database!`);
 }
 
 main()
