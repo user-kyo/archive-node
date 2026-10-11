@@ -9,7 +9,9 @@
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23111827'/%3E%3Crect x='4' y='5' width='16' height='15' rx='2' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='16' y1='3' x2='16' y2='7' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='8' y1='3' x2='8' y2='7' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='4' y1='11' x2='20' y2='11' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
-  <script src="dict.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <script src="dict.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -465,43 +467,76 @@
       border-color: var(--mute);
     }
 
-    .chip-wrap {
-      display: flex;
-      flex-direction: column;
+    .chip-item {
+      display: inline-flex;
+      align-items: center;
       background: var(--bg);
       border-radius: 8px;
-      overflow: hidden;
       border: 1px solid var(--line);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .chip-item:hover {
+      border-color: var(--mute);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .chip-item.active {
+      border-color: #3b82f6 !important;
+      background: rgba(59, 130, 246, 0.06) !important;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
     }
 
     .chip-btn {
       border: none;
       background: transparent;
-      padding: 8px 12px;
+      padding: 6px 12px;
       font: 500 13px "Inter", sans-serif;
       color: var(--ink);
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      transition: background 0.3s ease;
+      gap: 7px;
+      border-radius: 7px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .chip-btn b {
+    .chip-item.active .chip-btn {
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+
+    .chip-del {
+      border: none;
+      background: transparent;
+      cursor: pointer;
       color: var(--mute);
-      font-weight: 500;
-      font-size: 11px;
-      text-transform: uppercase;
+      padding: 4px 8px 4px 2px;
+      font-size: 15px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease;
+      border-top-right-radius: 7px;
+      border-bottom-right-radius: 7px;
+    }
+
+    .chip-del:hover {
+      color: #ef4444;
     }
 
     .pos-badge {
-      font-size: 10px;
-      font-weight: 700;
-      font-family: monospace;
-      padding: 1px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      font-style: italic;
+      font-family: inherit;
+      padding: 1px 7px;
       border-radius: 4px;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      text-transform: lowercase;
       line-height: 1.25;
       display: inline-flex;
       align-items: center;
@@ -515,57 +550,603 @@
     .pos-md { background: rgba(244, 63, 94, 0.14); color: #e11d48; border: 1px solid rgba(244, 63, 94, 0.28); }
     .pos-tl { background: rgba(100, 116, 139, 0.14); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.28); }
 
-    .chip-btn:hover {
-      background: rgba(0, 0, 0, 0.03);
-    }
-
-    .chip-wrap-active {
-      border-color: #4285f4 !important;
-      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.15);
-      width: 100% !important;
-    }
-
-    .chip-wrap:not(.chip-wrap-active) .chip-min {
-      display: none;
-    }
-    .chip-wrap.chip-wrap-active .chip-min {
-      display: inline-flex;
-    }
-
-    .synset-nav-btn {
-      transition: all 0.2s ease;
-    }
-
-    .synset-nav-btn:hover {
-      filter: brightness(0.95);
-      transform: translateY(-1px);
-    }
-
-    .synset-nav-btn:active {
-      transform: translateY(0);
-    }
-
-    .term-dict {
+    /* Modern Dictionary & WordNet Inspector Card */
+    .dict-inspector {
       display: grid;
       grid-template-rows: 0fr;
-      transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      background: var(--fill);
-      width: 0;
-      min-width: 100%;
-    }
-
-    .term-dict.open {
-      grid-template-rows: 1fr;
-      border-top: 1px solid var(--line);
-    }
-
-    .term-dict-inner {
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                  margin 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-top: 0;
+      margin-bottom: 0;
+      width: 100%;
       overflow: hidden;
-      font-size: 13px;
-      color: var(--mute);
-      padding: 0 14px;
-      line-height: 1.5;
+      box-sizing: border-box;
+    }
+
+    .dict-inspector.open {
+      grid-template-rows: 1fr;
+      opacity: 1;
+      transform: translateY(0);
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .dict-inspector-inner {
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .dict-card {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
       text-align: left;
+    }
+
+    .dict-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .dict-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .dict-word-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .dict-word {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .dict-synset-pill {
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 5px;
+      background: rgba(59, 130, 246, 0.1);
+      color: #2563eb;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .dict-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 11.5px;
+      color: var(--mute);
+    }
+
+    .dict-close-btn {
+      border: 1px solid var(--line);
+      background: var(--fill);
+      color: var(--mute);
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .dict-close-btn:hover {
+      background: var(--bg);
+      color: var(--ink);
+      border-color: var(--mute);
+    }
+
+    /* Taxonomy Breadcrumbs */
+    .dict-taxonomy {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(2, 132, 199, 0.05);
+      border: 1px solid rgba(2, 132, 199, 0.16);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 11.5px;
+      color: #0284c7;
+      font-weight: 500;
+      flex-wrap: wrap;
+    }
+
+    .dict-tax-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 10px;
+      color: #0369a1;
+      flex-shrink: 0;
+    }
+
+    .dict-tax-path {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      color: #0284c7;
+      font-weight: 500;
+    }
+
+    .dict-tax-node {
+      display: inline-block;
+    }
+
+    .dict-tax-node.active {
+      font-weight: 700;
+      color: #0369a1;
+      background: rgba(2, 132, 199, 0.12);
+      padding: 1px 7px;
+      border-radius: 4px;
+    }
+
+    .dict-tax-sep {
+      color: #7dd3fc;
+      font-size: 11px;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    /* Enhanced Sense Navigation Toolbar */
+    .dict-sense-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 12px;
+      flex-wrap: wrap;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .dict-sense-info-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .dict-sense-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #1d4ed8;
+      letter-spacing: -0.01em;
+    }
+
+    .dict-sense-badge-num {
+      font-weight: 700;
+      color: #2563eb;
+    }
+
+    .dict-sense-badge-total {
+      color: var(--mute);
+      font-weight: 500;
+      font-size: 10.5px;
+    }
+
+    .dict-sense-pos-tag {
+      font-size: 11px;
+      font-weight: 600;
+      font-style: italic;
+      color: var(--ink);
+      background: var(--fill);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 2px 7px;
+    }
+
+    /* Modern Capsule Pagination Dots */
+    .dict-sense-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--fill);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 4px 7px;
+    }
+
+    .dict-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--line);
+      cursor: pointer;
+      transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dict-dot:hover {
+      background: #93c5fd;
+      transform: scale(1.3);
+    }
+
+    .dict-dot.active {
+      width: 16px;
+      height: 6px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #2563eb, #3b82f6);
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.45);
+      animation: dictDotExpand 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes dictDotExpand {
+      0% {
+        width: 6px;
+        opacity: 0.6;
+      }
+      100% {
+        width: 16px;
+        opacity: 1;
+      }
+    }
+
+    /* Sense Actions & Navigation Buttons */
+    .dict-sense-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .dict-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .dict-nav-btn:hover {
+      border-color: #3b82f6;
+      color: #2563eb;
+      background: var(--surface);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .dict-nav-btn:active {
+      transform: scale(0.94);
+    }
+
+    .dict-nav-btn-prev {
+      background: var(--bg);
+      border-color: var(--line);
+      color: var(--ink);
+    }
+
+    .dict-nav-btn-next {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
+    }
+
+    .dict-nav-btn-next:hover {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
+    }
+
+    /* Sense Quick Tabs Selector */
+    .dict-sense-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 0;
+      scrollbar-width: none;
+    }
+
+    .dict-sense-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .dict-sense-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--fill);
+      border: 1px solid var(--line);
+      font-size: 11px;
+      color: var(--mute);
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .dict-sense-tab:hover {
+      border-color: #3b82f6;
+      color: #2563eb;
+      background: var(--surface);
+    }
+
+    .dict-sense-tab.active {
+      background: rgba(37, 99, 235, 0.1);
+      border-color: #3b82f6;
+      color: #2563eb;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .dict-sense-tab .dict-tab-idx {
+      font-weight: 700;
+    }
+
+    .dict-sense-tab .dict-tab-pos {
+      font-size: 10px;
+      opacity: 0.85;
+      font-style: italic;
+    }
+
+    .dict-sense-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      will-change: transform, opacity;
+    }
+
+    /* Definition Box with Accent Border & Index Badge */
+    .dict-def-box {
+      display: flex;
+      gap: 14px;
+      background: var(--fill);
+      border: 1px solid var(--line);
+      border-left: 3.5px solid #2563eb;
+      border-radius: 10px;
+      padding: 14px 16px;
+      line-height: 1.6;
+      font-size: 13.5px;
+      color: var(--ink);
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .dict-def-num-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 11.5px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+
+    .dict-def-content {
+      flex: 1;
+    }
+
+    .dict-definition-text {
+      color: var(--ink);
+      font-size: 13.5px;
+      font-weight: 450;
+      line-height: 1.65;
+      letter-spacing: -0.005em;
+    }
+
+    .dict-example {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 12.5px;
+      font-style: italic;
+      color: var(--mute);
+      background: rgba(37, 99, 235, 0.04);
+      border-left: 2.5px solid #3b82f6;
+      border-radius: 0 6px 6px 0;
+      padding: 7px 11px;
+      line-height: 1.5;
+    }
+
+    .dict-quote-icon {
+      flex-shrink: 0;
+      color: #3b82f6;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    .dict-synonyms-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 11.5px;
+      color: var(--mute);
+      padding: 2px 0;
+    }
+
+    .dict-syn-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+      color: var(--ink);
+      font-size: 11.5px;
+      flex-shrink: 0;
+    }
+
+    .dict-syn-pills-list {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .dict-syn-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--fill);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .dict-syn-pill:hover {
+      border-color: #3b82f6;
+      color: #2563eb;
+      background: rgba(59, 130, 246, 0.08);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+    }
+
+    .dict-syn-pill:active {
+      transform: scale(0.93);
+    }
+
+    /* Footer Status Bar with Cycle Action */
+    .dict-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--mute);
+      padding-top: 8px;
+      border-top: 1px dashed var(--line);
+      flex-wrap: wrap;
+    }
+
+    .dict-footer-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10.5px;
+      color: var(--mute);
+    }
+
+    /* Animation Keyframes for Smooth Sense & Synonym Transitions */
+    @keyframes dictCardSwap {
+      0% {
+        opacity: 0;
+        transform: translateY(8px) scale(0.985);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes dictSenseNext {
+      0% {
+        opacity: 0;
+        transform: translateX(18px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes dictSensePrev {
+      0% {
+        opacity: 0;
+        transform: translateX(-18px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes dictSynsetPop {
+      0% {
+        opacity: 0.4;
+        transform: scale(0.9);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .dict-anim-swap {
+      animation: dictCardSwap 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .dict-anim-next {
+      animation: dictSenseNext 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .dict-anim-prev {
+      animation: dictSensePrev 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .dict-synset-pill.dict-anim-next,
+    .dict-synset-pill.dict-anim-prev {
+      animation: dictSynsetPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dict-anim-swap,
+      .dict-anim-next,
+      .dict-anim-prev,
+      .dict-dot.active {
+        animation: none !important;
+        transform: none !important;
+        transition: none !important;
+      }
     }
 
     .bars {
@@ -1149,6 +1730,114 @@
     html.theme-transitioning *:after {
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
+
+    /* Review Entry Title Editable Affordance */
+    .review-title-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .review-title-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .review-title-icon {
+      width: 14px;
+      height: 14px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .review-title-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .review-title-input {
+      width: 100% !important;
+      box-sizing: border-box !important;
+      font-size: 18px !important;
+      font-weight: 600 !important;
+      padding: 12px 86px 12px 16px !important;
+      background: var(--bg) !important;
+      border: 1.5px solid var(--line) !important;
+      border-radius: 8px !important;
+      color: var(--ink) !important;
+      cursor: text;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .review-title-input:hover {
+      border-color: var(--mute) !important;
+    }
+
+    .review-title-input:focus,
+    .review-title-input:focus-visible {
+      border-color: var(--accent) !important;
+      outline: none !important;
+      box-shadow: 0 0 0 3px var(--fill), inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .review-title-edit-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 10px;
+      background: var(--fill);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--mute);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .review-title-wrap:hover .review-title-edit-btn,
+    .review-title-edit-btn:hover {
+      color: var(--ink);
+      border-color: var(--mute);
+    }
+
+    .review-title-wrap:focus-within .review-title-edit-btn {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--fill);
+    }
+
+    .review-title-hint {
+      font-size: 12px;
+      color: var(--mute);
+      margin: 0 0 18px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+    }
+
+    .review-title-hint svg {
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
   </style>
 </head>
 
@@ -1377,35 +2066,53 @@
         </div>
         <small>Minimalist thought capture.</small>
       </div>
-      <nav role="tablist" aria-label="Sections">
-        <button role="tab" id="t-new" aria-selected="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M12 5v14M5 12h14" />
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <nav role="tablist" aria-label="Sections">
+          <button role="tab" id="t-new" aria-selected="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <span>New</span>
+          </button>
+          <button role="tab" id="t-arc" aria-selected="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span>Archive</span>
+          </button>
+          <button role="tab" id="t-set" aria-selected="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
+            </svg>
+            <span>Settings</span>
+          </button>
+        </nav>
+        <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Theme (Dark / Light)" aria-label="Toggle Theme">
+          <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
-          <span>New</span>
-        </button>
-        <button role="tab" id="t-arc" aria-selected="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
+          <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
-          <span>Archive</span>
         </button>
-        <button role="tab" id="t-set" aria-selected="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path
-              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-            </path>
-          </svg>
-          <span>Settings</span>
-        </button>
-      </nav>
+      </div>
     </header>
 
 
@@ -1559,12 +2266,42 @@
       <p class="lead" style="margin-bottom: 24px;">Check the extracted insights. Nothing is saved until you commit.</p>
 
       <div class="sheet" style="padding: 24px; margin-bottom: 24px; border: 2px solid var(--accent);">
-        <label for="title"
-          style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 8px; font-weight: 700;">Entry
-          Title</label>
-        <input type="text" id="title"
-          style="font-size: 18px; font-weight: 600; padding: 12px 16px; background: var(--bg); border: 1px solid transparent; margin-bottom: 16px;"
-          placeholder="Name your note...">
+        <div class="review-title-header">
+          <label for="title" class="review-title-label">
+            <svg class="review-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            Entry Title
+          </label>
+        </div>
+
+        <div class="review-title-wrap">
+          <input type="text" id="title" class="review-title-input"
+            placeholder="Name your note (click to edit)..."
+            title="Click to edit entry title"
+            spellcheck="true"
+            autocomplete="off">
+          <button type="button" class="review-title-edit-btn" id="btn-edit-title"
+            onclick="$('title').focus(); $('title').select();"
+            aria-label="Edit title"
+            title="Click to edit title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span>Edit</span>
+          </button>
+        </div>
+
+        <div class="review-title-hint">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Auto-generated title. You can edit or rename this anytime before saving.</span>
+        </div>
 
         <div style="display: flex; gap: 12px;">
           <button class="btn ghost" id="discard-res"
@@ -1595,8 +2332,8 @@
       <div class="two" style="margin-bottom: 24px;">
         <div class="sheet" style="padding: 24px;">
           <h2 style="font-size: 16px; margin-bottom: 4px;">Extracted Terms</h2>
-          <p class="sub" style="font-size: 13px; margin-bottom: 16px;">Key concepts identified in your text. Click to see definitions, or remove/add terms.</p>
           <div class="chips" id="terms"></div>
+          <div id="dict-inspector" class="dict-inspector"><div class="dict-inspector-inner" id="dict-inspector-content"></div></div>
           <div style="margin-top: 14px; display: flex; gap: 8px;">
             <input type="text" id="add-term-input" placeholder="Add custom key term..." style="padding: 6px 12px; font-size: 13px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); flex: 1;">
             <button type="button" class="btn ghost" id="btn-add-term" style="width: auto; padding: 6px 14px; font-size: 13px; font-weight: 500;">Add</button>
@@ -1651,7 +2388,7 @@
 
     <!-- DETAIL VIEW -->
     <section id="v-det" hidden>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
         <button class="btn ghost" id="det-back" style="width:auto; padding:8px 16px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -1660,7 +2397,7 @@
           </svg>
           Back
         </button>
-        <div id="det-view-actions" style="display: flex; gap: 8px;">
+        <div id="det-view-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button class="btn ghost" id="det-edit"
             style="width:auto; padding:8px 14px; color: var(--ink); display: inline-flex; align-items: center; gap: 6px;" title="Edit entry">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1688,6 +2425,16 @@
         <div class="txt" id="det-text" style="font-size:16px; line-height: 1.7; white-space: pre-wrap;"></div>
         <h2 style="margin-top:32px;">Key terms</h2>
         <div class="chips" id="det-terms"></div>
+        <div id="det-dict-inspector" class="dict-inspector" aria-live="polite"><div class="dict-inspector-inner" id="det-dict-inspector-content"></div></div>
+
+        <!-- Related Notes Section -->
+        <div id="det-related-section" style="margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--line); display: none;">
+          <h2 style="font-size: 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Related Notes
+          </h2>
+          <div id="det-related-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
       </div>
 
       <!-- EDIT MODE -->
@@ -1804,20 +2551,38 @@
       </div>
     </div>
   </div>
-  <div id="modal-del" class="modal" hidden>
-    <div class="modal-box" style="text-align: left; padding: 24px;">
-      <h2 style="font-size:18px; margin-bottom:8px; color:var(--ink); font-weight: 600; letter-spacing:-0.01em;">Delete
-        note?</h2>
-      <p style="font-size:14px; margin-bottom:0; color:var(--mute); line-height:1.5;">This action cannot be undone. This
-        note will be permanently deleted.</p>
-      <div class="modal-actions" style="margin-top: 24px; gap: 12px; display: flex; justify-content: flex-end;">
+  <div id="modal-del" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-del-heading">
+    <div class="modal-box" style="text-align: left; padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); box-shadow: 0 20px 40px rgba(0,0,0,0.25);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(239, 68, 68, 0.12); display: flex; align-items: center; justify-content: center; color: #ef4444; flex-shrink: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        </div>
+        <div>
+          <h2 id="modal-del-heading" style="font-size: 18px; margin: 0; color: var(--ink); font-weight: 700; letter-spacing: -0.01em;">Delete Note?</h2>
+          <div style="font-size: 12px; color: var(--mute);">Permanent deletion confirmation</div>
+        </div>
+      </div>
+      <p style="font-size: 14px; margin: 12px 0 8px; color: var(--ink); line-height: 1.5;">
+        Are you sure you want to delete <strong id="modal-del-title" style="color: #dc2626;">this note</strong>?
+      </p>
+      <p style="font-size: 13px; margin: 0 0 20px; color: var(--mute); line-height: 1.4;">
+        This action cannot be undone. The note, its extracted terms, and all study references will be removed permanently.
+      </p>
+      <div class="modal-actions" style="margin-top: 20px; gap: 10px; display: flex; justify-content: flex-end;">
         <button class="btn ghost" id="btn-cancel-del"
-          style="font-weight: 500; color: var(--ink); border: 1px solid var(--line); padding: 8px 16px; border-radius: 6px;">Cancel</button>
+          style="font-weight: 500; color: var(--ink); border: 1px solid var(--line); padding: 10px 18px; border-radius: 8px; cursor: pointer;">Cancel</button>
         <button class="btn" id="btn-confirm-del"
-          style="background:var(--ink); color:var(--bg); border:none; font-weight: 500; padding: 8px 16px; border-radius: 6px;">Delete</button>
+          style="background: #dc2626; color: #ffffff; border: none; font-weight: 600; padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: background 0.15s ease;"
+          onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">Delete</button>
       </div>
     </div>
   </div>
+
   <div class="toast" id="toast" role="status"></div>
 
   <script>
@@ -2039,6 +2804,119 @@
     const PRONOUNS = new Set(["i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them", "ko", "mo", "ka", "ako", "ikaw", "siya"]);
     const HONORIFICS = new Set(["ma'am", "maam", "sir", "dr", "dr.", "prof", "prof.", "mr", "mr.", "mrs", "mrs.", "ms", "ms."]);
     const KNOWN_ENTITIES = new Set(["melvin", "calvin", "reyes", "newton", "mendel", "einstein", "darwin"]);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const cachedCorpora = localStorage.getItem('archiveNodeCorpora');
+        if (cachedCorpora) {
+          const parsed = JSON.parse(cachedCorpora);
+          if (parsed && Array.isArray(parsed.names)) {
+            parsed.names.forEach(n => KNOWN_ENTITIES.add(n.toLowerCase()));
+          }
+        }
+      }
+    } catch (_) {}
+
+    const TITLE_MINOR_WORDS = new Set([
+      "a", "an", "the", "and", "but", "or", "nor", "for", "so", "yet",
+      "as", "at", "by", "in", "of", "off", "on", "per", "to", "up", "via", "with", "vs", "vs.",
+      "ng", "sa", "mga", "ay", "na", "at", "ko", "mo", "ni", "kay"
+    ]);
+    const DAYS_OF_WEEK = new Set(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]);
+    const MONTHS_OF_YEAR = new Set(["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]);
+    const SUBJECT_ENTITIES = new Set(["english", "filipino", "tagalog", "spanish", "science", "biology", "chemistry", "physics", "math", "mathematics"]);
+    const PRESERVED_ACRONYMS = {
+      "dna": "DNA", "rna": "RNA", "atp": "ATP", "adp": "ADP", "nadph": "NADPH",
+      "ocr": "OCR", "nlp": "NLP", "pos": "POS", "api": "API", "cpu": "CPU", "ram": "RAM",
+      "i": "I", "ii": "II", "iii": "III", "iv": "IV", "v": "V", "vi": "VI", "vii": "VII", "viii": "VIII", "ix": "IX", "x": "X"
+    };
+    const HONORIFIC_PROPER = {
+      "ma'am": "Ma'am", "maam": "Ma'am", "sir": "Sir",
+      "dr": "Dr", "mr": "Mr", "mrs": "Mrs", "ms": "Ms", "prof": "Prof"
+    };
+
+    function isProperNounWord(lower) {
+      return KNOWN_ENTITIES.has(lower) || DAYS_OF_WEEK.has(lower) || MONTHS_OF_YEAR.has(lower) || SUBJECT_ENTITIES.has(lower);
+    }
+
+    function smartCapitalizeTitle(str) {
+      if (!str) return '';
+      const parts = str.split(/(\s+|[:;.,!?\-–—/]+)/);
+      let result = '';
+      let afterPunct = true;
+      let prevWordWasHonorific = false;
+
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        if (!p) continue;
+        if (/^\s+$/.test(p)) {
+          result += p;
+          continue;
+        }
+        if (/^[:;.,!?\-–—/]+$/.test(p)) {
+          result += p;
+          if (/[:;.,!?\-–—/]/.test(p)) afterPunct = true;
+          continue;
+        }
+
+        const lower = p.toLowerCase();
+        let word = p;
+
+        if (PRESERVED_ACRONYMS[lower]) {
+          word = PRESERVED_ACRONYMS[lower];
+        } else if (HONORIFIC_PROPER[lower]) {
+          word = HONORIFIC_PROPER[lower];
+          prevWordWasHonorific = true;
+        } else if (isProperNounWord(lower) || prevWordWasHonorific) {
+          word = p.charAt(0).toUpperCase() + p.slice(1);
+          prevWordWasHonorific = false;
+        } else if (/^i['’](?:m|ll|ve|d)$/i.test(p)) {
+          word = 'I' + p.slice(1);
+        } else if (lower === 'i') {
+          word = 'I';
+        } else if (afterPunct || !TITLE_MINOR_WORDS.has(lower)) {
+          word = p.charAt(0).toUpperCase() + p.slice(1);
+        } else {
+          word = p.toLowerCase();
+        }
+
+        result += word;
+        afterPunct = false;
+      }
+      return result;
+    }
+
+    function smartCapitalizeText(str) {
+      if (!str) return '';
+      // 1. Capitalize start of sentences / after punctuation (. ! ?) or newlines
+      let res = str.replace(/(^|[\n\r]|[.!?]\s+)([a-z])/g, (m, prefix, char) => prefix + char.toUpperCase());
+
+      // 2. Capitalize after colons or dashes if followed by a letter
+      res = res.replace(/([:–—]\s+)([a-z])/g, (m, prefix, char) => prefix + char.toUpperCase());
+
+      // 3. Capitalize standalone pronoun I and contractions
+      res = res.replace(/\b(i)\b/g, 'I');
+      res = res.replace(/\b(i)(['’](?:m|ll|ve|d))\b/g, 'I$2');
+
+      // 4. Capitalize honorifics
+      res = res.replace(/\b(ma'am|maam|sir|dr|dr\.|mr|mr\.|mrs|mrs\.|ms|ms\.|prof|prof\.)\b/gi, (m) => {
+        const l = m.toLowerCase();
+        if (l.startsWith("ma'am") || l === "maam") return "Ma'am";
+        return m.charAt(0).toUpperCase() + m.slice(1);
+      });
+
+      // 5. Capitalize word after honorific (e.g. Dr. reyes -> Dr. Reyes)
+      res = res.replace(/(\b(?:Ma'am|Sir|Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Prof\.?)\s+)([a-z])/g, (m, prefix, char) => prefix + char.toUpperCase());
+
+      // 6. Capitalize known proper nouns, days, months, subjects, acronyms
+      res = res.replace(/\b([A-Za-z]+)\b/g, (match) => {
+        const l = match.toLowerCase();
+        if (PRESERVED_ACRONYMS[l]) return PRESERVED_ACRONYMS[l];
+        if (isProperNounWord(l)) return match.charAt(0).toUpperCase() + match.slice(1);
+        return match;
+      });
+
+      return res;
+    }
 
     const KNOWN_VERBS = new Set([
       "absorb", "make", "produce", "synthesize", "convert", "release", "study", "finish", "ask",
@@ -3036,23 +3914,43 @@
     }
 
     // Backend API Client (Prisma + Express)
-    const API_BASE = window.location.origin.startsWith('http') ? '' : 'http://localhost:3000';
+    const API_BASE = (window.location.origin.startsWith('http') && window.location.port === '3000')
+      ? ''
+      : 'http://localhost:3000';
 
     async function apiFetch(endpoint, options = {}, timeoutMs = 8000) {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        const res = await fetch(API_BASE + endpoint, {
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          ...options
-        });
-        clearTimeout(timer);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-      } catch (err) {
-        return null;
+      const bases = [
+        API_BASE,
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        ''
+      ];
+      const uniqueBases = Array.from(new Set(bases.filter(b => typeof b === 'string')));
+
+      const reqHeaders = options.body
+        ? { 'Content-Type': 'application/json', ...(options.headers || {}) }
+        : { ...(options.headers || {}) };
+
+      for (const base of uniqueBases) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), timeoutMs);
+          const cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+          const url = (base ? base.replace(/\/+$/, '') : '') + cleanEndpoint;
+          const res = await fetch(url, {
+            ...options,
+            headers: reqHeaders,
+            signal: controller.signal
+          });
+          clearTimeout(timer);
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (err) {
+          // Try next fallback base
+        }
       }
+      return null;
     }
 
     async function fetchArchiveFromDB(showToast = false) {
@@ -3087,6 +3985,26 @@
 
     async function initArchiveBackend() {
       await fetchArchiveFromDB(false);
+      try {
+        const corpora = await apiFetch('/api/wordnet/corpora');
+        if (corpora) {
+          if (Array.isArray(corpora.stopwords)) {
+            corpora.stopwords.forEach(s => {
+              STOP.add(s.toLowerCase());
+              KNOWN_WORDS.add(s.toLowerCase());
+            });
+          }
+          if (Array.isArray(corpora.names)) {
+            corpora.names.forEach(n => {
+              KNOWN_ENTITIES.add(n.toLowerCase());
+              KNOWN_WORDS.add(n.toLowerCase());
+            });
+          }
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('archiveNodeCorpora', JSON.stringify(corpora));
+          }
+        }
+      } catch (_) {}
     }
     let cur = null, mode = "paste";
     let currentDetIdx = -1;
@@ -3701,33 +4619,66 @@
       return 'pos-nn';
     }
 
+    function getPosShortLabel(tag) {
+      if (!tag) return 'n.';
+      const t = tag.toUpperCase();
+      if (t === 'NN' || t === 'NNS') return 'n.';
+      if (t === 'NNP' || t === 'NNPS') return 'prop. n.';
+      if (t.startsWith('VB')) return 'v.';
+      if (t.startsWith('JJ')) return 'adj.';
+      if (t.startsWith('RB')) return 'adv.';
+      if (t === 'MD') return 'modal v.';
+      if (t === 'TL' || t === 'TAGALOG') return 'tl.';
+      if (t === 'PRP' || t === 'PRP$') return 'pron.';
+      if (t === 'IN') return 'prep.';
+      if (t === 'CC') return 'conj.';
+      return t.toLowerCase();
+    }
+
     function getPosDescription(tag) {
-      if (!tag) return 'Noun [NN]';
+      if (!tag) return 'Noun [n.]';
       const t = tag.toUpperCase();
       switch (t) {
-        case 'NN': return 'Noun, singular/mass [NN]';
-        case 'NNS': return 'Noun, plural [NNS]';
-        case 'NNP': return 'Proper noun, named entity [NNP]';
-        case 'VB': return 'Verb, base form / infinitive [VB]';
-        case 'VBZ': return 'Verb, 3rd person singular present [VBZ]';
-        case 'VBP': return 'Verb, present non-3rd person [VBP]';
-        case 'VBD': return 'Verb, past tense [VBD]';
-        case 'VBG': return 'Verb, gerund / present participle [VBG]';
-        case 'VBN': return 'Verb, past participle [VBN]';
-        case 'JJ': return 'Adjective, descriptive [JJ]';
-        case 'JJR': return 'Adjective, comparative [JJR]';
-        case 'JJS': return 'Adjective, superlative [JJS]';
-        case 'RB': return 'Adverb [RB]';
-        case 'MD': return 'Modal verb [MD]';
-        case 'TL': return 'Tagalog content word [TL]';
-        default: return `Part of speech: [${t}]`;
+        case 'NN': return 'Noun, singular/mass [n.]';
+        case 'NNS': return 'Noun, plural [n.]';
+        case 'NNP': return 'Proper noun, named entity [prop. n.]';
+        case 'NNPS': return 'Proper noun, plural [prop. n.]';
+        case 'VB': return 'Verb, base form / infinitive [v.]';
+        case 'VBZ': return 'Verb, 3rd person singular present [v.]';
+        case 'VBP': return 'Verb, present tense [v.]';
+        case 'VBD': return 'Verb, past tense [v.]';
+        case 'VBG': return 'Verb, gerund / participle [v.]';
+        case 'VBN': return 'Verb, past participle [v.]';
+        case 'JJ': return 'Adjective, descriptive [adj.]';
+        case 'JJR': return 'Adjective, comparative [adj.]';
+        case 'JJS': return 'Adjective, superlative [adj.]';
+        case 'RB': return 'Adverb [adv.]';
+        case 'RBR': return 'Adverb, comparative [adv.]';
+        case 'RBS': return 'Adverb, superlative [adv.]';
+        case 'MD': return 'Modal auxiliary verb [modal v.]';
+        case 'TL': return 'Tagalog / Filipino content word [tl.]';
+        default: return `Part of speech: [${getPosShortLabel(t)}]`;
       }
     }
 
     function renderPosBadge(tag) {
       const cls = getPosClass(tag);
       const desc = getPosDescription(tag);
-      return `<b class="pos-badge ${cls}" title="${esc(desc)}">${esc(tag || 'NN')}</b>`;
+      const short = getPosShortLabel(tag);
+      return `<b class="pos-badge ${cls}" title="${esc(desc)}">${esc(short)}</b>`;
+    }
+
+    function formatDictPos(pos) {
+      if (!pos) return 'n. (noun)';
+      const s = String(pos).trim().toLowerCase();
+      if (s === 'n' || s === 'noun' || s.startsWith('n ') || s.startsWith('noun [') || s === 'n.') return 'n. (noun)';
+      if (s === 'v' || s === 'verb' || s.startsWith('v ') || s.startsWith('verb [') || s === 'v.') return 'v. (verb)';
+      if (s === 'a' || s === 's' || s === 'adj' || s === 'adjective' || s.startsWith('adj ') || s.startsWith('adjective [') || s === 'adj.') return 'adj. (adjective)';
+      if (s === 'r' || s === 'adv' || s === 'adverb' || s.startsWith('adv ') || s.startsWith('adverb [') || s === 'adv.') return 'adv. (adverb)';
+      if (s.includes('proper') || s.includes('nnp') || s.includes('prop')) return 'prop. n. (proper noun)';
+      if (s.includes('modal') || s === 'md') return 'modal v. (modal auxiliary)';
+      if (s.includes('tagalog') || s === 'tl' || s === 'tl.') return 'tl. (Tagalog)';
+      return pos;
     }
 
     function getContextualTagForTerm(term, text) {
@@ -3758,7 +4709,7 @@
 
     function analyze(raw) {
       const norm = normalize(raw);
-      const clean = norm.clean;
+      const clean = smartCapitalizeText(norm.clean);
       const corrections = norm.corrections || [];
 
       const sentences = tokenizeSentences(clean);
@@ -3823,32 +4774,30 @@
       const terms = cur.terms || [];
       const tags = cur.tags || {};
       const untagged = cur.untagged || [];
+      const activeWord = activeInspectorState.review ? activeInspectorState.review.word : null;
 
       $("terms").innerHTML = terms.map(t => {
         const tag = tags[t] || getContextualTagForTerm(t, cur.clean);
+        const isActive = activeWord && activeWord.toLowerCase() === t.toLowerCase();
         return `
-<div class="chip-wrap">
-  <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-    <button class="chip-btn" onclick="toggleDef(this, '${esc(t)}', '${esc(tag)}')" title="Click to view WordNet & Corpus definition (${esc(getPosDescription(tag))})">${esc(t)} ${renderPosBadge(tag)}</button>
-    <div style="display:flex; align-items:center;">
-      <button class="chip-min" onclick="toggleDef(this.closest('.chip-wrap').querySelector('.chip-btn'))" title="Minimize popup" style="border:none; background:transparent; cursor:pointer; color:var(--mute); padding:6px; font-size:14px; align-items:center; justify-content:center;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-      </button>
-      <button class="chip-del" onclick="removeReviewTerm(event, '${esc(t)}')" title="Remove term" style="border:none; background:transparent; cursor:pointer; color:var(--mute); padding:6px 10px; font-size:16px; line-height:1;">&times;</button>
-    </div>
-  </div>
-  <div class="term-dict"><div class="term-dict-inner"></div></div>
+<div class="chip-item ${isActive ? 'active' : ''}" data-term="${esc(t)}">
+  <button type="button" class="chip-btn" onclick="inspectTerm('${esc(t)}', '${esc(tag)}', this, 'review')" title="Click to view WordNet dictionary entry (${esc(getPosDescription(tag))})">
+    <span>${esc(t)}</span>
+    ${renderPosBadge(tag)}
+  </button>
+  <button type="button" class="chip-del" onclick="removeReviewTerm(event, '${esc(t)}')" title="Remove term">&times;</button>
 </div>`;
-      }).join("") + untagged.map(t => `
-<div class="chip-wrap" style="border-style:dashed; background:transparent;">
-  <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-    <button class="chip-btn" style="color:var(--mute);" onclick="toggleDef(this, '${esc(t)}', 'TL')" title="Click to view Taglish corpus information">${esc(t)} ${renderPosBadge('TL')}</button>
-    <button class="chip-min" onclick="toggleDef(this.closest('.chip-wrap').querySelector('.chip-btn'))" title="Minimize popup" style="border:none; background:transparent; cursor:pointer; color:var(--mute); padding:6px 10px; font-size:14px; align-items:center; justify-content:center;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-    </button>
-  </div>
-  <div class="term-dict"><div class="term-dict-inner"></div></div>
-</div>`).join("");
+      }).join("") + untagged.map(t => {
+        const isActive = activeWord && activeWord.toLowerCase() === t.toLowerCase();
+        return `
+<div class="chip-item ${isActive ? 'active' : ''}" data-term="${esc(t)}" style="border-style:dashed;">
+  <button type="button" class="chip-btn" style="color:var(--mute);" onclick="inspectTerm('${esc(t)}', 'TL', this, 'review')" title="Click to view Taglish corpus entry">
+    <span>${esc(t)}</span>
+    ${renderPosBadge('TL')}
+  </button>
+  <button type="button" class="chip-del" onclick="removeReviewTerm(event, '${esc(t)}')" title="Remove term">&times;</button>
+</div>`;
+      }).join("");
 
       const cats = [...new Set(terms.map(t => CAT[t.toLowerCase()]).filter(Boolean))];
       $("cats").innerHTML = cats.length ? cats.map(c => `<span class="chip">${esc(c)}</span>`).join("") : '<span class="sub">No categories matched.</span>';
@@ -3866,6 +4815,9 @@
       if (e) e.stopPropagation();
       if (!cur || !cur.terms) return;
       cur.terms = cur.terms.filter(t => t.toLowerCase() !== term.toLowerCase());
+      if (activeInspectorState.review && activeInspectorState.review.word && activeInspectorState.review.word.toLowerCase() === term.toLowerCase()) {
+        closeInspector('review');
+      }
       renderReviewChips();
       $("outClean").innerHTML = highlight(cur.clean, cur.terms);
     };
@@ -3891,6 +4843,8 @@
     }
 
     function show(v) {
+      if (v !== 'res') closeInspector('review');
+      if (v !== 'det') closeInspector('det');
       ["new", "res", "arc", "det", "set"].forEach(x => $("v-" + x).hidden = x !== v);
       $("t-new").setAttribute("aria-selected", v === "new" || (v === "res" && editingArchiveIdx === -1));
       $("t-arc").setAttribute("aria-selected", v === "arc" || v === "det" || (v === "res" && editingArchiveIdx !== -1));
@@ -3919,7 +4873,57 @@
         return res;
       }
 
-      // 1. Check exact match in local WORDNET_DB
+      // 1. Primary: Query NLTK WordNet via Express backend API
+      try {
+        let remote = await apiFetch('/api/wordnet/' + encodeURIComponent(lower));
+        if (!remote || !remote.definition) {
+          if (lem && lem !== lower) {
+            remote = await apiFetch('/api/wordnet/' + encodeURIComponent(lem));
+          }
+        }
+        if (remote && (remote.definition || (remote.synsets && remote.synsets.length))) {
+          const synsets = remote.synsets && remote.synsets.length ? [...remote.synsets] : [remote];
+          if (forcedTag) {
+            const ft = forcedTag.toUpperCase();
+            let targetType = '';
+            if (ft.startsWith('VB')) targetType = 'verb';
+            else if (ft.startsWith('JJ')) targetType = 'adjective';
+            else if (ft.startsWith('RB')) targetType = 'adverb';
+            else if (ft.startsWith('NN')) targetType = 'noun';
+
+            if (targetType) {
+              synsets.sort((a, b) => {
+                const aMatch = (a.pos && a.pos.toLowerCase().includes(targetType)) ? 1 : 0;
+                const bMatch = (b.pos && b.pos.toLowerCase().includes(targetType)) ? 1 : 0;
+                return bMatch - aMatch;
+              });
+            }
+          }
+          return cacheAndReturn({ ...remote, term: w, lemma: remote.lemma || lem, synsets, ...synsets[0] });
+        }
+      } catch (e) {}
+
+      // 2. Tagalog Corpus words for course Taglish tolerance layer
+      if (TL_WORDS.has(lower) || TL_WORDS.has(lem)) {
+        const synsets = [
+          {
+            synset: `${lower}.tl.01`,
+            pos: "tl. (Tagalog)",
+            lemma: lem,
+            hypernym: "Filipino / Tagalog Vocabulary",
+            definition: `Filipino/Tagalog vocabulary item "${w}" identified in note text, preserved in native morphology without English modification.`,
+            synonyms: ["Taglish vocabulary", "untagged concept"]
+          }
+        ];
+        return cacheAndReturn({
+          term: w,
+          lemma: lem,
+          synsets,
+          ...synsets[0]
+        });
+      }
+
+      // 3. Fallback: local WORDNET_DB cache if offline
       const localEntry = WORDNET_DB[lower] || WORDNET_DB[lem];
       if (localEntry) {
         const synsets = localEntry.synsets && localEntry.synsets.length ? [...localEntry.synsets] : [localEntry];
@@ -3941,35 +4945,6 @@
         }
         return cacheAndReturn({ ...localEntry, term: w, lemma: localEntry.lemma || lem, synsets, ...synsets[0] });
       }
-
-      // 2. Check Tagalog Corpus words
-      if (TL_WORDS.has(lower) || TL_WORDS.has(lem)) {
-        const synsets = [
-          {
-            synset: `${lower}.tl.01`,
-            pos: "Tagalog content word",
-            lemma: lem,
-            hypernym: "Filipino / Tagalog Vocabulary",
-            definition: "Filipino/Tagalog word identified in note text, preserved in original form without English modification.",
-            synonyms: ["Taglish vocabulary", "untagged concept"]
-          }
-        ];
-        return cacheAndReturn({
-          term: w,
-          lemma: lem,
-          synsets,
-          ...synsets[0]
-        });
-      }
-
-      // 3. Query Express backend WordNet API
-      try {
-        const remote = await apiFetch('/api/wordnet/' + encodeURIComponent(lower));
-        if (remote && (remote.definition || (remote.synsets && remote.synsets.length))) {
-          const synsets = remote.synsets && remote.synsets.length ? remote.synsets : [remote];
-          return cacheAndReturn({ ...remote, term: w, lemma: remote.lemma || lem, synsets, ...synsets[0] });
-        }
-      } catch (e) {}
 
       // 4. Fallback to free public dictionary API
       try {
@@ -4026,12 +5001,12 @@
       const synsets = [
         {
           synset: `${lem}.${isProper ? 'nnp' : 'n'}.01`,
-          pos: isProper ? 'proper noun [NNP]' : 'noun [NN]',
+          pos: isProper ? 'prop. n. (proper noun)' : 'n. (noun)',
           lemma: lem,
           hypernym: hyper,
           definition: isProper 
-            ? `Named entity or proper noun referenced in the study note context.` 
-            : `Core academic concept identified in note context, categorized under ${hyper}.`,
+            ? `Named entity or proper noun "${w}" referenced in the study note context.` 
+            : `Lexical concept representing "${w}" (base form "${lem}"), categorized under ${hyper}.`,
           synonyms: [lem, hyper]
         }
       ];
@@ -4044,149 +5019,303 @@
       });
     }
 
-    window.stepSynset = function (btn, delta) {
-      const dict = btn.closest('.term-dict');
-      if (!dict || !dict._wordNetInfo) return;
-      const synsets = dict._wordNetInfo.synsets || [dict._wordNetInfo];
+    const activeInspectorState = {
+      review: { word: null, tag: null, info: null, currentIdx: 0, loading: false },
+      det: { word: null, tag: null, info: null, currentIdx: 0, loading: false }
+    };
+
+    window.closeInspector = function(scope = 'review') {
+      const inspectorId = scope === 'det' ? 'det-dict-inspector' : 'dict-inspector';
+      const container = $(inspectorId);
+      if (container) {
+        container.classList.remove('open');
+      }
+      const chipsContainerId = scope === 'det' ? 'det-terms' : 'terms';
+      const chipsEl = $(chipsContainerId);
+      if (chipsEl) {
+        chipsEl.querySelectorAll('.chip-item.active').forEach(c => c.classList.remove('active'));
+      }
+      if (activeInspectorState[scope]) {
+        activeInspectorState[scope].word = null;
+        activeInspectorState[scope].loading = false;
+      }
+    };
+
+    window.stepInspectorSense = function(scope, delta) {
+      const state = activeInspectorState[scope];
+      if (!state || !state.info) return;
+      const synsets = (state.info.synsets && state.info.synsets.length) ? state.info.synsets : [state.info];
       if (!synsets.length) return;
-      dict._currentSynsetIdx = (dict._currentSynsetIdx + delta + synsets.length) % synsets.length;
-      renderSynsetContent(dict);
+      state.animType = delta >= 0 ? 'next' : 'prev';
+      state.currentIdx = (state.currentIdx + delta + synsets.length) % synsets.length;
+      renderInspectorCard(scope);
     };
 
-    window.renderSynsetContent = function (dict) {
-      const inner = dict.querySelector('.term-dict-inner');
-      if (!inner) return;
-      const info = dict._wordNetInfo;
-      const word = dict._targetWord || info.term || '';
-      const synsets = (info.synsets && info.synsets.length) ? info.synsets : [info];
-      const total = synsets.length;
-      const idx = Math.max(0, Math.min(dict._currentSynsetIdx || 0, total - 1));
-      const current = synsets[idx] || synsets[0];
-      const freqText = dict._freqText || '';
-
-      const synsList = (current.synonyms && current.synonyms.length) ? current.synonyms : (info.synonyms || []);
-      const synsHtml = synsList.length
-        ? `<div style="margin-top: 8px; font-size: 11px; color: var(--mute); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-             <span style="font-weight: 600; color: var(--ink);">Related:</span>
-             ${synsList.map(s => `<span style="padding: 1px 6px; border-radius: 4px; background: var(--bg); border: 1px solid var(--line);">${esc(s)}</span>`).join("")}
-           </div>`
-        : "";
-
-      const exampleHtml = current.example
-        ? `<div style="margin-top: 6px; font-size: 11px; font-style: italic; color: var(--mute); border-left: 2px solid #3b82f6; padding-left: 8px;">
-             &ldquo;${esc(current.example)}&rdquo;
-           </div>`
-        : "";
-
-      const pagerHtml = total > 1
-        ? `<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: rgba(66, 133, 244, 0.07); border: 1px solid rgba(66, 133, 244, 0.2); border-radius: 6px; padding: 5px 10px; flex-wrap: wrap; gap: 6px;">
-             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-               <span style="font-size: 11px; font-weight: 700; color: #1d4ed8;">Meaning ${idx + 1} of ${total}</span>
-               <span style="font-size: 10px; color: var(--mute);">(${total} synset meanings)</span>
-             </div>
-             <div style="display: flex; align-items: center; gap: 5px;">
-               <button class="synset-nav-btn" onclick="stepSynset(this, -1)" title="Previous synset meaning" style="border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">‹ Prev</button>
-               <button class="synset-nav-btn" onclick="stepSynset(this, 1)" title="Next synset meaning" style="border: 1px solid #3b82f6; background: #2563eb; color: #fff; border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Next Meaning ›</button>
-             </div>
-           </div>`
-        : "";
-
-      inner.innerHTML = `
-        <div style="padding: 10px 4px 14px 4px; line-height: 1.5; font-size: 12px; text-align: left;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 700; font-size: 14px; color: var(--ink);">${esc(info.term || word)}</span>
-              <span style="font-size: 10px; font-family: monospace; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: rgba(66, 133, 244, 0.12); color: #2563eb;">${esc(current.synset || info.synset || '')}</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-              <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: var(--fill); color: var(--mute); text-transform: uppercase;">${esc(current.pos || info.pos || 'NN')}</span>
-              ${freqText}
-            </div>
-          </div>
-
-          ${pagerHtml}
-
-          <div style="font-size: 11px; color: #0284c7; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-            <span>${esc(current.hypernym || info.hypernym || '')}</span>
-          </div>
-
-          <div style="color: var(--ink); margin-bottom: 6px; line-height: 1.6; font-size: 12px; background: var(--bg); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
-              <span style="font-weight: 600; color: var(--mute); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;">WordNet Definition${total > 1 ? ` (Sense ${idx + 1} of ${total})` : ''}</span>
-              ${total > 1 ? `<span onclick="stepSynset(this, 1)" style="font-size: 10px; color: #2563eb; cursor: pointer; font-weight: 600;">Next Meaning ›</span>` : ''}
-            </div>
-            <div>${esc(current.definition || info.definition || 'No definition available.')}</div>
-            ${exampleHtml}
-          </div>
-
-          <div style="font-size: 10px; color: var(--mute); margin-top: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
-            <span style="font-family: monospace;">Lemma: ${esc(info.lemma || word)}</span>
-            ${total > 1 ? `<span style="color: #2563eb; font-weight: 600; cursor: pointer;" onclick="stepSynset(this, 1)">Cycle meanings (${(idx + 1) % total + 1}/${total}) ↻</span>` : ''}
-          </div>
-
-          ${synsHtml}
-        </div>`;
+    window.setInspectorSense = function(scope, idx) {
+      const state = activeInspectorState[scope];
+      if (!state || !state.info) return;
+      const synsets = (state.info.synsets && state.info.synsets.length) ? state.info.synsets : [state.info];
+      if (idx >= 0 && idx < synsets.length && idx !== state.currentIdx) {
+        state.animType = idx > state.currentIdx ? 'next' : 'prev';
+        state.currentIdx = idx;
+        renderInspectorCard(scope);
+      }
     };
 
-    window.toggleDef = async function (btn, word, tag) {
-      const group = btn.closest('.chip-wrap');
-      if (!group) return;
-      const dict = group.querySelector('.term-dict');
-      if (!dict) return;
+    window.inspectTerm = async function(word, tag = null, btn = null, scope = 'review') {
+      if (!word) return;
+      const cleanWord = String(word).trim();
+      const state = activeInspectorState[scope] || (activeInspectorState[scope] = { word: null, tag: null, info: null, currentIdx: 0, loading: false });
+      const inspectorId = scope === 'det' ? 'det-dict-inspector' : 'dict-inspector';
+      const contentId = scope === 'det' ? 'det-dict-inspector-content' : 'dict-inspector-content';
+      const container = $(inspectorId);
+      const contentEl = $(contentId);
+      if (!container || !contentEl) return;
 
-      if (dict.classList.contains('open')) {
-        dict.classList.remove('open');
-        group.classList.remove('chip-wrap-active');
-        btn.style.background = 'transparent';
+      // If user clicked the same active term, smoothly toggle retract/close
+      if (state.word && state.word.toLowerCase() === cleanWord.toLowerCase() && container.classList.contains('open')) {
+        closeInspector(scope);
         return;
       }
 
-      document.querySelectorAll('.term-dict.open').forEach(el => {
-        if (el !== dict) {
-          el.classList.remove('open');
-          const p = el.closest('.chip-wrap');
-          if (p) {
-            p.classList.remove('chip-wrap-active');
-            const b = p.querySelector('.chip-btn');
-            if (b) b.style.background = 'transparent';
+      // Update chip active highlighting
+      const chipsContainerId = scope === 'det' ? 'det-terms' : 'terms';
+      const chipsEl = $(chipsContainerId);
+      if (chipsEl) {
+        chipsEl.querySelectorAll('.chip-item').forEach(c => {
+          const cWord = c.getAttribute('data-term') || '';
+          if (cWord.toLowerCase() === cleanWord.toLowerCase()) {
+            c.classList.add('active');
+          } else {
+            c.classList.remove('active');
           }
-        }
-      });
-
-      dict.classList.add('open');
-      group.classList.add('chip-wrap-active');
-      btn.style.background = 'rgba(66, 133, 244, 0.08)';
-
-      if (!dict._wordNetInfo) {
-        const inner = dict.querySelector('.term-dict-inner');
-        inner.innerHTML = `
-          <div style="padding: 10px 4px 12px 4px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mute);">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
-              <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
-              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-              <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
-              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-            </svg>
-            Fetching WordNet synsets & lexical information...
-          </div>`;
-
-        let freqText = "";
-        if (cur && cur.counts && (cur.counts[word] || cur.counts[word.toLowerCase()])) {
-          const cnt = cur.counts[word] || cur.counts[word.toLowerCase()];
-          freqText = `<span style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: rgba(34, 197, 94, 0.12); color: #16a34a; font-weight: 600;">FreqDist: ${cnt}x in note</span>`;
-        }
-
-        const info = await getWordNetInfo(word, tag);
-        dict._wordNetInfo = info;
-        dict._currentSynsetIdx = 0;
-        dict._freqText = freqText;
-        dict._targetWord = word;
+        });
       }
 
-      renderSynsetContent(dict);
+      state.word = cleanWord;
+      state.tag = tag;
+      state.currentIdx = 0;
+      state.loading = true;
+      state.animType = 'swap'; // Trigger smooth card swap animation when selecting synonym or term
+
+      // Expand inspector container with smooth CSS grid and opacity animation
+      container.classList.add('open');
+
+      // Check if already in memory cache
+      const cacheKey = `${cleanWord.toLowerCase()}:${tag || ''}`;
+      if (wordNetCache.has(cacheKey)) {
+        state.info = wordNetCache.get(cacheKey);
+        state.loading = false;
+        renderInspectorCard(scope);
+        return;
+      }
+
+      // Render loading skeleton state
+      contentEl.innerHTML = `
+        <div class="dict-card dict-anim-swap" style="padding: 16px 20px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 0.8s linear infinite;">
+                <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+              </svg>
+              <span style="font-size: 13px; font-weight: 600; color: var(--ink);">Looking up "${esc(cleanWord)}" in WordNet corpus...</span>
+            </div>
+            <button type="button" class="dict-close-btn" onclick="closeInspector('${scope}')" title="Close dictionary">&times;</button>
+          </div>
+        </div>`;
+
+      try {
+        const info = await getWordNetInfo(cleanWord, tag);
+        if (state.word && state.word.toLowerCase() === cleanWord.toLowerCase()) {
+          state.info = info;
+          state.loading = false;
+          renderInspectorCard(scope);
+        }
+      } catch (err) {
+        if (state.word && state.word.toLowerCase() === cleanWord.toLowerCase()) {
+          state.loading = false;
+          contentEl.innerHTML = `
+            <div class="dict-card dict-anim-swap">
+              <div class="dict-header">
+                <span class="dict-word">${esc(cleanWord)}</span>
+                <button type="button" class="dict-close-btn" onclick="closeInspector('${scope}')">&times;</button>
+              </div>
+              <p style="color:var(--mute); font-size:13px; margin:0;">Unable to load lexical definition at this time.</p>
+            </div>`;
+        }
+      }
+    };
+
+    window.renderInspectorCard = function(scope = 'review') {
+      const contentId = scope === 'det' ? 'det-dict-inspector-content' : 'dict-inspector-content';
+      const contentEl = $(contentId);
+      if (!contentEl) return;
+      const state = activeInspectorState[scope];
+      if (!state || !state.info) return;
+
+      const animType = state.animType || 'swap';
+      const info = state.info;
+      const word = state.word || info.term || '';
+      const synsets = (info.synsets && info.synsets.length) ? info.synsets : [info];
+      const total = synsets.length;
+      const idx = Math.max(0, Math.min(state.currentIdx || 0, total - 1));
+      const current = synsets[idx] || synsets[0];
+
+      let freqPill = '';
+      if (cur && cur.counts && (cur.counts[word] || cur.counts[word.toLowerCase()])) {
+        const cnt = cur.counts[word] || cur.counts[word.toLowerCase()];
+        freqPill = `<span style="font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: rgba(34, 197, 94, 0.12); color: #16a34a; font-weight: 600;">FreqDist: ${cnt}x in note</span>`;
+      }
+
+      const hyperPath = current.hypernym || info.hypernym || '';
+      let taxHtml = '';
+      if (hyperPath) {
+        const nodes = hyperPath.split(/\s*→\s*|\s*->\s*/).filter(Boolean);
+        const pathNodes = nodes.map((n, i) => {
+          const isLast = i === nodes.length - 1;
+          return isLast
+            ? `<b class="dict-tax-node active">${esc(n)}</b>`
+            : `<span class="dict-tax-node">${esc(n)}</span>`;
+        }).join('<span class="dict-tax-sep">›</span>');
+
+        taxHtml = `
+          <div class="dict-taxonomy">
+            <span class="dict-tax-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              Taxonomy
+            </span>
+            <span class="dict-tax-path">${pathNodes}</span>
+          </div>`;
+      }
+
+      let senseNavHtml = '';
+      let senseTabsHtml = '';
+      if (total > 1) {
+        const dots = [];
+        for (let i = 0; i < Math.min(total, 8); i++) {
+          dots.push(`<div class="dict-dot ${i === idx ? 'active' : ''}" onclick="setInspectorSense('${scope}', ${i})" title="Jump to Sense ${i + 1}"></div>`);
+        }
+        senseNavHtml = `
+          <div class="dict-sense-nav">
+            <div class="dict-sense-info-group">
+              <div class="dict-sense-badge">
+                <span class="dict-sense-badge-num">Sense ${idx + 1}</span>
+                <span class="dict-sense-badge-total">of ${total}</span>
+              </div>
+              <span class="dict-sense-pos-tag">${esc(formatDictPos(current.pos || info.pos || 'n.'))}</span>
+              <div class="dict-sense-dots" role="tablist" title="Pagination">${dots.join('')}</div>
+            </div>
+            <div class="dict-sense-actions">
+              <button type="button" class="dict-nav-btn dict-nav-btn-prev" onclick="stepInspectorSense('${scope}', -1)" title="Previous sense" aria-label="Previous sense">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Prev</span>
+              </button>
+              <button type="button" class="dict-nav-btn dict-nav-btn-next" onclick="stepInspectorSense('${scope}', 1)" title="Next sense" aria-label="Next sense">
+                <span>Next Sense</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>`;
+
+        const tabs = synsets.slice(0, 6).map((s, i) => {
+          const posShort = (formatDictPos(s.pos || info.pos || 'n.')).split(' ')[0];
+          return `<button type="button" class="dict-sense-tab ${i === idx ? 'active' : ''}" onclick="setInspectorSense('${scope}', ${i})" title="Sense ${i + 1}: ${esc((s.definition || '').slice(0, 60))}...">
+            <span class="dict-tab-idx">#${i + 1}</span>
+            <span class="dict-tab-pos">${esc(posShort)}</span>
+          </button>`;
+        }).join('');
+        senseTabsHtml = `<div class="dict-sense-tabs">${tabs}</div>`;
+      }
+
+      const exText = current.example || (Array.isArray(current.examples) && current.examples.length ? current.examples[0] : null);
+      const exampleHtml = exText ? `
+        <div class="dict-example">
+          <svg class="dict-quote-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+          </svg>
+          <span>&ldquo;${esc(exText)}&rdquo;</span>
+        </div>` : '';
+
+      const synsList = (current.synonyms && current.synonyms.length) ? current.synonyms : (info.synonyms || []);
+      const synsHtml = synsList.length ? `
+        <div class="dict-synonyms-wrap">
+          <span class="dict-syn-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            Related Synonyms:
+          </span>
+          <div class="dict-syn-pills-list">
+            ${synsList.map(s => `<button type="button" class="dict-syn-pill" onclick="inspectTerm('${esc(s)}', null, null, '${scope}')" title="Inspect synonym '${esc(s)}'">${esc(s)}</button>`).join('')}
+          </div>
+        </div>` : '';
+
+      // Determine animation classes
+      const cardAnimClass = animType === 'swap' ? 'dict-anim-swap' : '';
+      const senseAnimClass = (animType === 'next' || animType === 'prev') ? `dict-anim-${animType}` : '';
+
+      contentEl.innerHTML = `
+        <div class="dict-card ${cardAnimClass}">
+          <div class="dict-header">
+            <div class="dict-title-group">
+              <div class="dict-word-row">
+                <h3 class="dict-word">${esc(info.term || word)}</h3>
+                <span class="dict-synset-pill ${senseAnimClass}">${esc(current.synset || info.synset || 'wordnet.01')}</span>
+              </div>
+              <div class="dict-meta-row">
+                <span style="font-weight:600; font-style:italic; color:var(--ink);">${esc(formatDictPos(current.pos || info.pos || 'n. (noun)'))}</span>
+                <span>&bull;</span>
+                <span>Lemma: <b style="color:var(--ink); font-family:monospace;">${esc(info.lemma || current.lemma || word)}</b></span>
+                ${freqPill ? `<span>&bull;</span> ${freqPill}` : ''}
+              </div>
+            </div>
+            <button type="button" class="dict-close-btn" onclick="closeInspector('${scope}')" title="Close dictionary">&times;</button>
+          </div>
+
+          ${senseNavHtml}
+          ${senseTabsHtml}
+
+          <div class="dict-sense-body ${senseAnimClass}">
+            ${taxHtml}
+            <div class="dict-def-box">
+              <div class="dict-def-num-badge"><span>${idx + 1}</span></div>
+              <div class="dict-def-content">
+                <div class="dict-definition-text">${esc(current.definition || info.definition || 'No definition available.')}</div>
+                ${exampleHtml}
+              </div>
+            </div>
+            ${synsHtml}
+          </div>
+
+          <div class="dict-footer">
+            <div class="dict-footer-source">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              <span>Powered by NLTK WordNet Lexical Database & Morphy Lemmatizer</span>
+            </div>
+          </div>
+        </div>`;
+    };
+
+    window.toggleDef = function (btn, word, tag) {
+      const scope = (btn && btn.closest('#det-terms')) ? 'det' : 'review';
+      inspectTerm(word, tag, btn, scope);
+    };
+    window.stepSynset = function (btn, delta) {
+      stepInspectorSense('review', delta);
     };
 
     function process() {
@@ -4245,6 +5374,7 @@
           else if (topT.length === 2) genTitle = topT.join(" & ");
           else genTitle = topT.slice(0, 2).join(", ") + " & " + topT[2];
         }
+        genTitle = smartCapitalizeTitle(genTitle);
         $("title").value = genTitle;
 
         $("v-new").style.opacity = "1";
@@ -4308,14 +5438,23 @@
     function openDetEditMode(preserveInputs = false) {
       if (currentDetIdx === -1) return;
       const e = archive[currentDetIdx];
-      if (!preserveInputs) {
-        $("det-input-title").value = e.title;
-        $("det-input-text").value = e.text;
+      if (!e) return;
+      // Only preserve inputs if preserveInputs is explicitly boolean true (not a click Event)
+      if (preserveInputs !== true) {
+        $("det-input-title").value = e.title || "";
+        $("det-input-text").value = e.text || "";
       }
       $("det-view-actions").hidden = true;
       $("det-view-card").hidden = true;
       $("det-edit-card").hidden = false;
-      setTimeout(() => $("det-input-text").focus(), 50);
+      setTimeout(() => {
+        const txt = $("det-input-text");
+        if (txt) {
+          txt.style.height = "auto";
+          txt.style.height = Math.max(260, txt.scrollHeight) + "px";
+          txt.focus();
+        }
+      }, 50);
     }
 
     function closeDetEditMode() {
@@ -4327,7 +5466,7 @@
 
     function reviewDetEdit() {
       if (currentDetIdx === -1) return;
-      const title = $("det-input-title").value.trim() || "Untitled note";
+      const title = smartCapitalizeTitle($("det-input-title").value.trim()) || "Untitled note";
       const text = $("det-input-text").value.trim();
       if (!text) {
         toast("Note content cannot be empty");
@@ -4375,9 +5514,118 @@
       $("v-res").style.animation = "fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards";
     }
 
-    window.viewDet = function (idx) {
+    function renderRelatedNotes(rawIdx) {
+      const idx = Number(rawIdx);
+      if (isNaN(idx) || idx < 0 || idx >= archive.length) return;
+      const currentNote = archive[idx];
+      const container = $("det-related-section");
+      const list = $("det-related-list");
+      if (!container || !list || !currentNote) return;
+
+      let terms = currentNote.parsedTerms;
+      if (!terms) {
+        try {
+          terms = Array.isArray(currentNote.terms) ? currentNote.terms : JSON.parse(currentNote.terms || '[]');
+        } catch (_) {
+          terms = [];
+        }
+      }
+      const termSet = new Set(
+        terms
+          .map(t => (typeof t === 'string' ? t.toLowerCase().trim() : ''))
+          .filter(Boolean)
+      );
+
+      if (termSet.size === 0) {
+        container.style.display = "none";
+        list.innerHTML = "";
+        return;
+      }
+
+      const currentTitle = (currentNote.title || '').trim().toLowerCase();
+      const currentText = (currentNote.text || '').trim();
+      const currentId = currentNote.id;
+
+      const related = [];
+      archive.forEach((n, i) => {
+        // Guarantee: a note can NEVER be related to itself
+        if (i === idx) return;
+        if (n === currentNote) return;
+        if (currentId && n.id && n.id === currentId) return;
+        if (currentTitle && n.title && n.title.trim().toLowerCase() === currentTitle &&
+            currentText && n.text && n.text.trim() === currentText) {
+          return;
+        }
+
+        let nTerms = n.parsedTerms;
+        if (!nTerms) {
+          try {
+            nTerms = Array.isArray(n.terms) ? n.terms : JSON.parse(n.terms || '[]');
+          } catch (_) {
+            nTerms = [];
+          }
+        }
+        const overlap = nTerms
+          .map(t => (typeof t === 'string' ? t.trim() : ''))
+          .filter(t => t && termSet.has(t.toLowerCase()));
+
+        // Deduplicate overlap terms
+        const uniqueOverlap = Array.from(new Set(overlap.map(t => t.toLowerCase())))
+          .map(lower => overlap.find(t => t.toLowerCase() === lower));
+
+        if (uniqueOverlap.length > 0) {
+          related.push({ note: n, idx: i, overlap: uniqueOverlap });
+        }
+      });
+
+      if (related.length === 0) {
+        container.style.display = "none";
+        list.innerHTML = "";
+        return;
+      }
+
+      related.sort((a, b) => b.overlap.length - a.overlap.length);
+      container.style.display = "block";
+      list.innerHTML = related.slice(0, 5).map(item => `
+        <div class="related-note-item" onclick="navigateToRelatedNote(${item.idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateToRelatedNote(${item.idx});}" role="button" tabindex="0" title="Open related note: ${esc(item.note.title || 'Untitled note')}">
+          <div style="flex: 1; min-width: 0;">
+            <div class="related-note-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>${esc(item.note.title || 'Untitled note')}</span>
+            </div>
+            <div class="related-note-meta">${esc(item.note.date || '')}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="related-overlap-badge">${item.overlap.length} shared concept${item.overlap.length > 1 ? 's' : ''}: ${esc(item.overlap.slice(0, 3).join(', '))}</span>
+            <svg class="related-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    window.navigateToRelatedNote = function (rawIdx) {
+      const idx = Number(rawIdx);
+      if (isNaN(idx) || idx < 0 || idx >= archive.length) return;
+      viewDet(idx);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      const mainEl = document.querySelector("main");
+      if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
+      const card = $("det-view-card");
+      if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "start" });
+        card.style.animation = "none";
+        void card.offsetWidth;
+        card.style.animation = "fadeSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards";
+      }
+      const noteTitle = archive[idx]?.title || "note";
+      toast(`Opened: "${noteTitle}"`);
+    };
+
+    window.viewDet = function (rawIdx) {
+      const idx = Number(rawIdx);
       currentDetIdx = idx;
       const e = archive[idx];
+      if (!e) return;
       let termsArr = e.parsedTerms;
       if (!termsArr) {
         try {
@@ -4386,9 +5634,13 @@
           termsArr = Array.isArray(e.terms) ? e.terms : [];
         }
       }
-      $("det-title").textContent = e.title;
-      $("det-date").textContent = e.date;
-      $("det-text").textContent = e.text;
+      $("det-title").textContent = e.title || "Untitled note";
+      $("det-date").textContent = e.date || "";
+      $("det-text").textContent = e.text || "";
+
+      // Pre-populate edit fields with existing note title and content
+      if ($("det-input-title")) $("det-input-title").value = e.title || "";
+      if ($("det-input-text")) $("det-input-text").value = e.text || "";
 
       if (!e._noteAnalysis || e._noteAnalysisText !== e.text) {
         e._noteAnalysis = analyze(e.text || '');
@@ -4396,16 +5648,18 @@
       }
       const noteTags = e._noteAnalysis.tags || {};
 
+      closeInspector('det');
       $("det-terms").innerHTML = termsArr.map(t => {
         const tag = noteTags[t] || noteTags[t.toLowerCase()] || getContextualTagForTerm(t, e.text);
         return `
-<div class="chip-wrap">
-  <div style="display:flex; align-items:center;">
-    <button class="chip-btn" onclick="toggleDef(this, '${esc(t)}', '${esc(tag)}')" title="Click to view WordNet & Corpus definition (${esc(getPosDescription(tag))})">${esc(t)} ${renderPosBadge(tag)}</button>
-  </div>
-  <div class="term-dict"><div class="term-dict-inner"></div></div>
+<div class="chip-item" data-term="${esc(t)}">
+  <button type="button" class="chip-btn" onclick="inspectTerm('${esc(t)}', '${esc(tag)}', this, 'det')" title="Click to view WordNet dictionary entry (${esc(getPosDescription(tag))})">
+    <span>${esc(t)}</span>
+    ${renderPosBadge(tag)}
+  </button>
 </div>`;
       }).join("");
+      renderRelatedNotes(idx);
       closeDetEditMode();
       show("det");
     };
@@ -4414,20 +5668,38 @@
       closeDetEditMode();
       show("arc");
     };
-    $("det-edit").onclick = openDetEditMode;
+    $("det-edit").onclick = () => openDetEditMode(false);
     $("det-edit-cancel").onclick = closeDetEditMode;
     $("det-edit-review").onclick = reviewDetEdit;
 
-    $("det-del").onclick = () => {
-      if (currentDetIdx === -1) return;
+    function openDeleteModal(idx = null) {
+      if (idx !== null && idx !== undefined) {
+        currentDetIdx = Number(idx);
+      }
+      if (currentDetIdx === -1 || !archive[currentDetIdx]) return;
+      const note = archive[currentDetIdx];
+      const titleElem = $("modal-del-title");
+      if (titleElem) {
+        titleElem.textContent = note.title ? `"${note.title}"` : "this note";
+      }
       $("modal-del").hidden = false;
+    }
+
+    $("det-del").onclick = () => openDeleteModal(currentDetIdx);
+
+    $("btn-cancel-del").onclick = () => {
+      $("modal-del").hidden = true;
     };
 
-    $("btn-cancel-del").onclick = () => $("modal-del").hidden = true;
+    $("modal-del").onclick = (e) => {
+      if (e.target === $("modal-del")) $("modal-del").hidden = true;
+    };
+
     $("btn-confirm-del").onclick = async () => {
-      if (currentDetIdx !== -1) {
+      if (currentDetIdx !== -1 && archive[currentDetIdx]) {
         const toDelete = archive[currentDetIdx];
         const targetId = toDelete ? toDelete.id : null;
+        const noteTitle = toDelete.title || "Note";
         if (targetId) {
           const idx = archive.findIndex(item => item.id === targetId);
           if (idx !== -1) archive.splice(idx, 1);
@@ -4439,7 +5711,7 @@
         renderArchive();
         $("modal-del").hidden = true;
         show("arc");
-        toast("Entry deleted");
+        toast(`Deleted "${noteTitle}"`);
         if (targetId) {
           await apiFetch(`/api/notes/${targetId}`, { method: 'DELETE' });
         }
@@ -4526,10 +5798,39 @@
 
     function setTheme(t) {
       animSet();
-      ["auto", "light", "dark"].forEach(x => $("thm-" + x).setAttribute("aria-selected", x === t));
-      if (t === "auto") document.documentElement.removeAttribute("data-theme");
-      else document.documentElement.setAttribute("data-theme", t);
+      ["auto", "light", "dark"].forEach(x => {
+        const btn = $("thm-" + x);
+        if (btn) btn.setAttribute("aria-selected", x === t);
+      });
+      if (t === "auto") {
+        document.documentElement.removeAttribute("data-theme");
+        localStorage.removeItem("archivenode_theme");
+      } else {
+        document.documentElement.setAttribute("data-theme", t);
+        localStorage.setItem("archivenode_theme", t);
+      }
+      updateThemeToggleIcon();
     }
+
+    function updateThemeToggleIcon() {
+      const isDark = document.documentElement.dataset.theme === "dark" ||
+        (!document.documentElement.dataset.theme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      const sun = $("theme-icon-sun");
+      const moon = $("theme-icon-moon");
+      if (sun && moon) {
+        sun.style.display = isDark ? "block" : "none";
+        moon.style.display = isDark ? "none" : "block";
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.dataset.theme === "dark" ||
+        (!document.documentElement.dataset.theme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      setTheme(isDark ? "light" : "dark");
+      toast(`Theme: ${isDark ? "Light" : "Dark"}`);
+    }
+
+    if ($("theme-toggle")) $("theme-toggle").onclick = toggleTheme;
     $("thm-auto").onclick = () => setTheme("auto");
     $("thm-light").onclick = () => setTheme("light");
     $("thm-dark").onclick = () => setTheme("dark");
@@ -4552,7 +5853,10 @@
       renderArchive();
       $("modal-clear").hidden = true;
       toast("Archive cleared");
-      await apiFetch('/api/notes', { method: 'DELETE' });
+      await apiFetch('/api/notes?confirm=true', {
+        method: 'DELETE',
+        headers: { 'X-Confirm-Clear': 'true' }
+      });
     };
 
     $("btn-start").onclick = () => {
@@ -5011,6 +6315,46 @@
         addReviewTerm();
       }
     };
+    $("title").onkeydown = e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        $("title").value = smartCapitalizeTitle($("title").value);
+        $("title").blur();
+      }
+    };
+    $("title").onblur = () => {
+      $("title").value = smartCapitalizeTitle($("title").value);
+    };
+    $("title").oninput = function() {
+      const val = this.value;
+      const pos = this.selectionStart;
+      if (pos === 1 && /^[a-z]$/.test(val)) {
+        this.value = val.toUpperCase();
+        this.setSelectionRange(1, 1);
+        return;
+      }
+      if (pos >= 3) {
+        const sub = val.slice(0, pos);
+        const m = sub.match(/([:;.,!?\-–—/]\s+)([a-z])$/);
+        if (m) {
+          const prefix = val.slice(0, pos - 1);
+          const char = val.charAt(pos - 1).toUpperCase();
+          const suffix = val.slice(pos);
+          this.value = prefix + char + suffix;
+          this.setSelectionRange(pos, pos);
+        }
+      }
+    };
+    if ($("det-input-title")) {
+      $("det-input-title").onblur = function() {
+        this.value = smartCapitalizeTitle(this.value);
+      };
+      $("det-input-title").onkeydown = function(e) {
+        if (e.key === "Enter") {
+          this.value = smartCapitalizeTitle(this.value);
+        }
+      };
+    }
     $("go").onclick = process;
     $("clr").onclick = () => {
       resetNewEntryForm();
@@ -5021,6 +6365,9 @@
         if ($("title").value.trim()) {
           $("det-input-title").value = $("title").value.trim();
         }
+        if (cur && cur.raw) {
+          $("det-input-text").value = cur.raw;
+        }
         show("det");
         openDetEditMode(true);
       } else {
@@ -5028,7 +6375,7 @@
       }
     };
     $("commit").onclick = async () => {
-      const title = $("title").value.trim() || "Untitled note";
+      const title = smartCapitalizeTitle($("title").value.trim()) || "Untitled note";
       const newEntry = {
         title,
         date: cur.date || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -5122,8 +6469,7 @@
       const delBtn = e.target.closest(".arc-del");
       if (delBtn) {
         e.stopPropagation();
-        currentDetIdx = Number(delBtn.dataset.idx);
-        $("det-del").click();
+        openDeleteModal(Number(delBtn.dataset.idx));
         return;
       }
       const b = e.target.closest("[data-t]");
@@ -5168,6 +6514,50 @@
       });
     });
 
+    document.addEventListener("keydown", (e) => {
+      const isInput = e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA";
+
+      if (e.key === "Escape") {
+        if ($("modal-del") && !$("modal-del").hidden) {
+          $("modal-del").hidden = true;
+          return;
+        }
+        const detInspector = $("det-dict-inspector");
+        const reviewInspector = $("dict-inspector");
+        if (detInspector && detInspector.classList.contains("open")) {
+          closeInspector("det");
+          return;
+        }
+        if (reviewInspector && reviewInspector.classList.contains("open")) {
+          closeInspector("review");
+          return;
+        }
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if ($("v-new") && !$("v-new").hidden) {
+          process();
+        } else if ($("v-det") && !$("v-det").hidden && $("det-edit-card") && !$("det-edit-card").hidden) {
+          reviewDetEdit();
+        }
+        return;
+      }
+
+      const activeInspector = ($("det-dict-inspector") && $("det-dict-inspector").classList.contains("open"))
+        ? "det"
+        : (($("dict-inspector") && $("dict-inspector").classList.contains("open")) ? "review" : null);
+
+      if (activeInspector && !isInput) {
+        if (e.key === "ArrowRight") {
+          if (typeof cycleSynset === "function") cycleSynset(activeInspector, 1);
+        } else if (e.key === "ArrowLeft") {
+          if (typeof cycleSynset === "function") cycleSynset(activeInspector, -1);
+        }
+      }
+    });
+
+    initTheme();
     renderArchive();
     initArchiveBackend();
   </script>

@@ -1,78 +1,99 @@
 # ArchiveNode
 
-**A Study Notes Structuring Engine: System Background and Scope**
+**Smart Study Notes Made Simple: System Overview & Guide**
 
-## 1. Background
+---
 
-Students take notes in notebooks, on loose sheets, and in chat messages to themselves. The notes are informal: shortcuts, abbreviations, repeated letters, and run-on sentences. Before an exam, the problem is no longer writing the notes but finding and organizing what is in them. Photographing a page keeps a copy, but a photo cannot be searched, and rereading every page to find the key ideas is slow.
+## 1. What is ArchiveNode?
 
-ArchiveNode is a web-based tool that turns raw study notes, either pasted as text or photographed from a handwritten page, into a clean, structured and searchable entry. It applies the natural language processing techniques from our course (tokenization, stopword filtering, lemmatization, WordNet, regular expressions, frequency analysis, and contextual POS tagging) to extract the key terms and recurring topics from each note. Because many Filipino students write in a mix of English and Tagalog, ArchiveNode includes a Taglish-tolerant layer so that mixed-language notes are cleaned and processed instead of breaking the pipeline.
+When studying, students often take quick notes in paper notebooks, on loose paper, or in casual chat drafts. These notes are usually rushed and messy: full of shortcuts (`pls`, `imp`), elongated words (`soooo good`), typos, and mixed languages.
 
-## 2. Problem Statement
+When exam time arrives, reviewing these notes becomes stressful. Photos of paper notes can't be searched easily, and flipping through messy pages to find one specific concept wastes valuable study time.
 
-Existing note tools can store notes and make their words searchable, but the student still has to read the notes to find out what they are about. ArchiveNode addresses this gap: it automatically cleans informal note text and produces a structured summary of its key terms and main topics, so the student sees what a note covers before reading it.
+**ArchiveNode** makes study notes clean, organized, and easy to search. Whether you type your notes or snap a photo of a handwritten page with your phone or webcam, ArchiveNode:
+- Cleans up typos and chat abbreviations automatically.
+- Picks out the most important keywords and concepts.
+- Labels words by their role (things, actions, describing words).
+- Shows dictionary definitions right on your screen.
+- Keeps all your notes organized in one fast, private place on your computer.
 
-## 3. Core Functionalities
+It also understands **Taglish** (English mixed with Tagalog), so Filipino students can write naturally without the app breaking or getting confused.
 
-The system is organized into a clean **frontend** (client application) and **backend** (NLP pipeline, REST API, SQLite database via Prisma) architecture, following the six core course functions:
+---
 
-| Function | What it does | Course topic |
-| --- | --- | --- |
-| **1. Note input** | The user pastes typed notes, snaps a photo using the device camera, or uploads a handwritten page. An interactive Google Lens-style scanner extracts text with word-level bounding boxes and sanitizes character clutter. | Chapter 1 (NLP lifecycle: data collection & OCR) |
-| **2. Cleanup and normalization** | Expands contractions (`couldn't` → `could not`) and abbreviations (`pls` → `please`, `imp` → `important`), and collapses stretched words (`soooo` → `so`, `sooobrang` → `sobrang`) using regular expressions. Common Taglish shortcuts (`yun` → `yung`, `di` → `hindi`) and OCR character confusions are corrected automatically, with strict derivational morphology preservation protecting already-correct words (`importance`, `difference`). | Chapter 7 (word replacement, edit distance, and regex normalization) |
-| **3. Sentence and word splitting** | Splits run-on notes into sentences and words. English and Tagalog stopwords are removed (using the NLTK stopword list plus a custom Tagalog function word list), while polarity negations such as "not" and "hindi" are preserved. | Chapters 3 and 4 (tokenizers, stopword filtering) |
-| **4. Key term extraction & Contextual POS Tagging** | Reduces words to their dictionary root (lemmatization) and contextually tags parts of speech across grammatical classes (nouns `NN`/`NNS`, proper nouns `NNP`, base/conjugated verbs `VB`/`VBZ`/`VBP`/`VBD`, adjectives `JJ`, adverbs `RB`, modals `MD`, and Taglish words `TL`). Key concepts and entities are highlighted with color-coded badges. | Chapters 6 and 9 (lemmatization, Brill-style contextual POS tagging) |
-| **5. Topic grouping & WordNet Lexicon** | Counts the most frequent terms (FreqDist) to surface recurring topics, and connects extracted terms to WordNet hypernym taxonomies (e.g., biological process, economic concept) with interactive multi-synset meaning navigation (`Meaning 1 of N`). | Chapters 2 and 5 (FreqDist, WordNet synsets & hypernyms) |
-| **6. Review, save and search** | The raw note or photo is displayed side-by-side with the cleaned text. The user reviews extracted terms, browses synsets, edits or removes tags, and saves the note to a persistent local SQLite database searchable by keyword, title, or date. | Chapter 1 (structured output & persistence) |
+## 2. How It Works (Step-by-Step)
 
-**Output of one processed note:** the cleaned text, an autocorrection audit banner, a list of contextually-tagged key terms, WordNet hypernym categories, top topics with their frequencies, and the original image and raw text preserved intact.
+ArchiveNode organizes notes in six simple, automatic steps:
 
-## 4. Taglish-Tolerant Layer
+| Step | What Happens | Why It Matters |
+| :--- | :--- | :--- |
+| **1. Add Your Note** | Type your text, paste it, upload a photo, or snap a page with your camera. | Turns handwriting and paper pages into digital, editable text in seconds. |
+| **2. Fix Typos & Shortcuts** | Expands shortcuts (`can't` → `cannot`, `pls` → `please`) and fixes stretched words (`soooo` → `so`, `sooobrang` → `sobrang`). | Makes rushed, casual notes easy to read without changing real subject words. |
+| **3. Cut Out the Clutter** | Breaks notes into clean sentences and removes common filler words (`the`, `is`, `sa`, `mga`). Important words like `not` or `hindi` are kept. | Clears out filler words so only the key study material stands out. |
+| **4. Highlight Key Words** | Simplifies words to their base form (`leaves` → `leaf`) and color-codes them (blue for naming words, green for actions, yellow for descriptions, slate for Tagalog). | Instantly spots key vocabulary, concepts, and definitions at a glance. |
+| **5. Topics & Dictionary** | Counts which ideas appear most often to find main topics, and links every keyword to a built-in dictionary. | Click any keyword to see its definition immediately—no need to open Google or a dictionary app. |
+| **6. Check, Edit & Save** | Compare your original note or photo next to the cleaned version. You can edit any word, approve changes, and save. | You stay in full control of your notes before anything is saved. |
 
-This layer lets the pipeline handle notes that mix English and Tagalog without requiring full Tagalog language parsing. It operates across three stages:
+**What you get for every saved note:**
+1. A clean, corrected version of your text.
+2. A list of corrections made (so you know what changed).
+3. Color-coded keyword badges with instant dictionary meanings.
+4. Top topics and main themes.
+5. Links to other related notes in your archive.
+6. Your original raw text or photo kept safe for reference.
 
-- **Tagalog stopword filtering.** A custom list of common function words (e.g., "ang", "ng", "sa", "yung", "daw", "mga", "ko", "mo") is filtered during keyword extraction so they do not crowd the topic summaries.
-- **Taglish normalization rules.** Regular expressions standardize informal shortcuts, spelling variants, and stretched words (e.g., "sooobrang" → "sobrang", "yun" → "yung", "di" → "hindi") before tokenization.
-- **English-first extraction with Tagalog preservation.** POS tagging, WordNet lookups, and lemmatization are applied to English subject words. Tagalog content words (e.g., "mahalaga", "maintindihan", "hirap", "aralin") are preserved in the text and displayed with distinct `TL` badges and custom corpus definitions rather than being discarded or misclassified.
+---
 
-**Example:** `"Photosynthesis is soooo important daw sa exam!! yung chlorophyll sa leaves absorbs sunlight"` is cleaned to `"Photosynthesis is so important daw sa exam! yung chlorophyll sa leaves absorbs sunlight"`. Extracted terms include `photosynthesis` [NN], `important` [JJ], `exam` [NN], `chlorophyll` [NN], `leaves` [NNS], `absorbs` [VBZ], and `sunlight` [NN], with `"daw"` and `"yung"` filtered as stopwords.
+## 3. Taglish (English + Tagalog) Friendly
 
-## 5. Related Systems
+Most Filipino students write notes in a natural mix of English and Tagalog. ArchiveNode handles this smoothly:
 
-Many tools already convert handwritten notes to text and make them searchable. The table below summarizes what they offer based on their public descriptions, and where ArchiveNode intentionally differs.
+- **Removes Tagalog Filler Words:** Words that don't carry study concepts (like `ang`, `ng`, `sa`, `mga`, `yung`, `daw`, `ko`, `mo`) are filtered out so they don't clutter your keywords.
+- **Fixes Tagalog Text Shortcuts:** Casual chat spellings (`yun` → `yung`, `di` → `hindi`) are standardized automatically.
+- **Protects Important Tagalog Words:** Meaningful words (like `mahalaga`, `maintindihan`, `kasaysayan`) are kept and tagged with a distinct `TL` badge so they are never lost.
 
-| System | What it offers | How ArchiveNode differs |
-| --- | --- | --- |
-| **Notewise, GoodNotes, Evernote, Apple Notes** | Full note-taking apps with handwriting or image OCR and search across notes. Some add AI chat and summaries. | ArchiveNode is not a generic note-taking app. It structures notes with transparent, explainable, rule-based NLP and extracts key concepts and hypernym topics. |
-| **Handwriting-to-text and OCR apps (e.g., NoteOCR)** | Convert photos of notes into editable, searchable text, with annotation and text-to-speech. | They stop at raw text extraction. ArchiveNode continues beyond text conversion: OCR cleanup, contraction expansion, spell normalization, POS tagging, topic grouping, and database archiving. |
-| **Open-source OCR tools (e.g., InkSpire)** | Convert scanned handwriting into searchable, editable text with export options. | ArchiveNode integrates a full NLP analysis pipeline and an interactive human review step on top of the extracted text. |
+---
 
-## 6. What Makes ArchiveNode Different
+## 4. How ArchiveNode Compares
 
-- **It structures notes instead of only storing them.** The result is an indexed set of key terms, grammatical roles, and categorical topics per note, not just searchable raw text.
-- **It is explainable.** Every extracted term can be traced to a specific deterministic rule (a regex normalizer, a lemmatizer, a Brill-style syntactic rule, or a WordNet synset path), unlike opaque generative AI summaries.
-- **It works on informal student text.** The normalization engine handles real student writing: informal abbreviations, repeated letters, contractions, and Taglish expressions.
-- **It protects valid vocabulary.** Derivational morphology detection ensures already-correct academic words (e.g., `importance` vs. `important`, `difference` vs. `different`) are never corrupted.
-- **It tolerates Taglish.** Mixed English and Tagalog notes are handled through a dedicated lightweight layer without claiming full Tagalog language processing.
-- **The user stays in control.** Original photos and raw text are never overwritten, and tags can be inspected and edited before saving.
+| Feature | Regular Note Apps (GoodNotes, Evernote) | Scanner Apps (CamScanner) | ArchiveNode |
+| :--- | :--- | :--- | :--- |
+| **Main Goal** | General writing and sketching | Just takes a picture of a document | **Organizes notes and pulls out key study concepts** |
+| **Text Cleanup** | Saves typos exactly as typed | Gives raw text with blurry misreads | **Automatically fixes shortcuts, typos, and repeated letters** |
+| **Key Words** | You have to manually tag everything | No keyword tags | **Automatically detects and color-codes important terms** |
+| **Dictionary** | None (you have to look words up yourself) | None | **Click any keyword to see its dictionary definition on the spot** |
+| **Related Notes** | Manual folders or search only | None | **Automatically points out other notes on the same topic** |
+| **Reliability** | May use unpredictable AI summaries | Basic OCR scanner | **Clear, reliable rules — no AI guessing or made-up facts** |
 
-## 7. Scope and Limitations
+---
 
-**In scope:**
-- English and Taglish study notes (partial Tagalog support, see Section 4).
-- Pasted typed text, uploaded photos, and live device camera captures.
-- Google Lens interactive OCR scanner with word-level bounding boxes and character cleaning.
-- The six NLP pipeline functions described in Section 3.
-- Persistent local SQLite database storage with CRUD and real-time search.
+## 5. What the System Does (and Doesn't) Do
 
-**Out of scope (to keep the system focused and lightweight):**
-- Generative AI chat or LLM summaries.
-- Audio recording or voice transcription.
-- Drawing, sketching, or handwriting stylus canvases.
-- Cloud synchronization, user accounts, and quiz generation.
-- Full Tagalog POS taggers, parsers, and machine translation between English and Tagalog.
+To keep ArchiveNode fast, private, and simple to use, it has clear boundaries:
 
-**Known limitations:**
-- Handwriting recognition depends on lighting, camera focus, and pen contrast; low-confidence words are highlighted in amber for user review.
-- Tagalog words are not mapped to WordNet synsets; they are preserved in the text and given Taglish corpus entries.
-- The system is designed as a local study aid and does not replace commercial document scanners.
+### What Is Included:
+- Support for English and Taglish study notes.
+- Typed notes, photo uploads, and live webcam/phone camera scanning.
+- Click-to-inspect scanner view where you can tap individual scanned words to review them.
+- Automatic typo cleanup and keyword highlighting.
+- Color-coded word tags (names, actions, descriptions, Tagalog).
+- Built-in English dictionary (WordNet) with multiple definitions.
+- Fast, instant search by title, keyword, text, or date.
+- Automatic suggestions for related notes in your collection.
+- Confirm-before-delete popup to prevent accidental note loss.
+- Dark mode and light mode.
+- 100% private offline storage on your computer.
+
+### What Is Kept Out (On Purpose):
+- **No Generative AI or Chatbots** — Runs on clear rules instead of AI chatbots that might invent false facts or hallucinate answers.
+- **No Cloud Accounts or Logins** — Everything stays on your computer. No accounts, no subscriptions, and no data tracking.
+- **No Flashcard Decks or Quizzes** — Keeps the focus strictly on taking, cleaning, and understanding your notes.
+- **No Audio Recording or Drawing Canvas** — Built specifically for text and photos of written pages.
+- **No Automatic Translation** — Notes stay in your natural voice and language without forced translation.
+
+---
+
+## 6. Tips for Best Results
+
+- **Taking Photos:** Good lighting and a flat page give the best scanning results. Words the scanner is less confident about are highlighted in yellow so you can quickly tap and fix them.
+- **Your Originals Are Safe:** The app never overwrites or deletes your original photo or raw text—you can always check what was originally written.

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node tests/autocorrect.test.js && node tests/tagger.test.js && node tests/ocr.test.js && node tests/verify_html.test.js",
+    "test": "node tests/autocorrect.test.js && node tests/tagger.test.js && node tests/ocr.test.js && node tests/verify_html.test.js && node tests/api.test.js",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push",
     "db:seed": "node prisma/seed.js"

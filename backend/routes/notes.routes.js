@@ -127,9 +127,16 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/notes - Clear all notes
+// DELETE /api/notes - Clear all notes (Protected by confirmation guard)
 router.delete('/', async (req, res) => {
   try {
+    const isConfirmed = req.query.confirm === 'true' || req.headers['x-confirm-clear'] === 'true';
+    if (!isConfirmed) {
+      return res.status(400).json({
+        error: 'Bulk deletion requires explicit confirmation. Pass ?confirm=true or Header "X-Confirm-Clear: true"'
+      });
+    }
+
     const result = await prisma.note.deleteMany();
     res.json({ success: true, count: result.count });
   } catch (error) {

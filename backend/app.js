@@ -6,6 +6,7 @@ const fs = require('fs');
 const ocrRoutes = require('./routes/ocr.routes');
 const wordnetRoutes = require('./routes/wordnet.routes');
 const notesRoutes = require('./routes/notes.routes');
+const healthRoutes = require('./routes/health.routes');
 
 const app = express();
 
@@ -22,6 +23,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // API Routes
+app.use('/api/health', healthRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/wordnet', wordnetRoutes);
 app.use('/api/notes', notesRoutes);

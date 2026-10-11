@@ -11,7 +11,18 @@ const CONTR = {
   "i'm": "i am"
 };
 
-const STOP_WORDS = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very just do does did have has had cannot please not hindi".split(" "));
+const path = require('path');
+const fs = require('fs');
+
+let STOP_WORDS = new Set("a an the is are was were be been am to of in on at for with and or but so then this that these those it its i you he she we they my your our their as by from into about up out if than too very just do does did have has had cannot please not hindi".split(" "));
+try {
+  const swPath = path.join(__dirname, '..', 'data', 'nltk_stopwords.json');
+  if (fs.existsSync(swPath)) {
+    const loaded = JSON.parse(fs.readFileSync(swPath, 'utf-8'));
+    loaded.forEach(w => STOP_WORDS.add(w.toLowerCase()));
+  }
+} catch (_) {}
+
 const TL_STOP = new Set("ang ng sa yung na at ay mga ko mo ka ako ikaw siya daw raw po ba din rin lang naman nga pa kasi ito iyan iyon si ni kay hindi".split(" "));
 const TL_WORDS = new Set("mahalaga maintindihan sobrang hirap gawin aralin kailangan tandaan basahin sulat sagot tanong".split(" "));
 
@@ -50,7 +61,14 @@ const KNOWN_NOUNS = new Set([
   "gravity", "algorithm", "network", "database", "concept", "process", "system", "structure"
 ]);
 
-const KNOWN_ENTITIES = new Set(["melvin", "calvin", "reyes", "newton", "mendel", "einstein", "darwin"]);
+let KNOWN_ENTITIES = new Set(["melvin", "calvin", "reyes", "newton", "mendel", "einstein", "darwin"]);
+try {
+  const namesPath = path.join(__dirname, '..', 'data', 'nltk_names.json');
+  if (fs.existsSync(namesPath)) {
+    const loaded = JSON.parse(fs.readFileSync(namesPath, 'utf-8'));
+    loaded.forEach(n => KNOWN_ENTITIES.add(n.toLowerCase()));
+  }
+} catch (_) {}
 
 const LEMMA = {
   leaves: "leaf",
@@ -85,6 +103,37 @@ function morphologyTag(w) {
   if (l.endsWith("ed") && l.length > 4) return "VBD";
   if (/(\b[a-z]+)(ize|ise|ify|ate)$/.test(l)) return "VB";
   return null;
+}
+
+function stemTagalog(w) {
+  if (!w) return "";
+  const l = w.toLowerCase().replace(/[^a-zñ-]/g, '');
+  if (TL_WORDS.has(l)) return l;
+  
+  // Prefix stripping: nag-, mag-, na-, ma-, pag-, i-
+  let stem = l;
+  if (stem.startsWith("nag") || stem.startsWith("mag") || stem.startsWith("pag")) {
+    stem = stem.slice(3);
+  } else if (stem.startsWith("na") || stem.startsWith("ma")) {
+    stem = stem.slice(2);
+  } else if (stem.startsWith("i-")) {
+    stem = stem.slice(2);
+  }
+  
+  // Infix stripping: -um-, -in-
+  if (stem.length > 4) {
+    if (stem.slice(1, 3) === "um" || stem.slice(1, 3) === "in") {
+      stem = stem.charAt(0) + stem.slice(3);
+    }
+  }
+
+  // Suffix stripping: -an, -in
+  if (stem.endsWith("an") || stem.endsWith("in")) {
+    if (stem.length > 4) stem = stem.slice(0, -2);
+  }
+
+  if (TL_WORDS.has(stem)) return stem;
+  return l;
 }
 
 function normalizeText(s) {
@@ -147,7 +196,7 @@ function tagSentences(sentences) {
       else if (PREPOSITIONS.has(l)) t.tag = "IN";
       else if (PRONOUNS.has(l)) t.tag = "PRP";
       else if (TL_STOP.has(l)) t.tag = "TL_STOP";
-      else if (TL_WORDS.has(l)) t.tag = "TL";
+      else if (TL_WORDS.has(l) || TL_WORDS.has(stemTagalog(l))) t.tag = "TL";
       else if (HONORIFICS.has(l)) t.tag = "NNP";
       else if (KNOWN_ENTITIES.has(l)) t.tag = "NNP";
       else if (prev && HONORIFICS.has(prev.lower)) {
@@ -286,7 +335,7 @@ function analyzeText(rawText) {
         continue;
       }
 
-      if (t.tag === "TL" || TL_WORDS.has(l)) {
+      if (t.tag === "TL" || TL_WORDS.has(l) || TL_WORDS.has(stemTagalog(l))) {
         untagged.add(l);
         continue;
       }
@@ -320,5 +369,6 @@ module.exports = {
   tokenizeSentences,
   tagSentences,
   analyzeText,
-  getLemma
+  getLemma,
+  stemTagalog
 };
